@@ -1,0 +1,243 @@
+<div class="form-container">
+  <!-- Mode Toggle -->
+  <div class="mode-toggle">
+    <button 
+      type="button" 
+      class="toggle-btn" 
+      [class.active]="isManualMode"
+      (click)="toggleMode()">
+      <span class="icon">📝</span>
+      <span>Manual</span>
+    </button>
+    <button 
+      type="button" 
+      class="toggle-btn" 
+      [class.active]="!isManualMode"
+      (click)="toggleMode()">
+      <span class="icon">🤖</span>
+      <span>IA con Gemini</span>
+    </button>
+  </div>
+
+  <!-- AI Mode -->
+  <div class="ai-mode" *ngIf="!isManualMode">
+    <div class="ai-instructions">
+      <p>🎤 Presiona el micrófono y di algo como:</p>
+      <p class="example">"Ayer gasté 2500 pesos en un helado"</p>
+      <p class="example">"Hoy recibí mi salario de 3500000 pesos"</p>
+    </div>
+    
+    <button 
+      type="button" 
+      class="mic-button large"
+      [class.recording]="isRecording"
+      [disabled]="isRecording || isProcessing"
+      (click)="startRecordingAI()">
+      <span class="mic-icon" [class.pulse]="isRecording">🎤</span>
+      <span *ngIf="!isRecording && !isProcessing">Hablar</span>
+      <span *ngIf="isRecording">Escuchando...</span>
+      <span *ngIf="isProcessing">Procesando...</span>
+    </button>
+  </div>
+
+  <!-- Manual Form -->
+  <form *ngIf="isManualMode" (ngSubmit)="onSubmit()" class="transaction-form">
+    
+    <!-- Categoría -->
+    <div class="form-group">
+      <label for="categoria">Categoría *</label>
+      <select 
+        id="categoria" 
+        [(ngModel)]="transaction.categoria" 
+        name="categoria"
+        (change)="onCategoriaChange()"
+        required>
+        <option value="">Selecciona una categoría</option>
+        <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+      </select>
+    </div>
+
+    <!-- Descripción -->
+    <div class="form-group">
+      <label for="descripcion">Descripción *</label>
+      <div class="input-with-mic">
+        <select 
+          *ngIf="transaction.categoria && descripcionesDisponibles.length > 0"
+          id="descripcion" 
+          [(ngModel)]="transaction.descripcion" 
+          name="descripcion"
+          required>
+          <option value="">Selecciona una descripción</option>
+          <option *ngFor="let desc of descripcionesDisponibles" [value]="desc">{{ desc }}</option>
+        </select>
+        <input 
+          *ngIf="!transaction.categoria || descripcionesDisponibles.length === 0"
+          type="text" 
+          id="descripcion" 
+          [(ngModel)]="transaction.descripcion" 
+          name="descripcion"
+          placeholder="Descripción de la transacción"
+          required>
+        <button 
+          type="button" 
+          class="mic-button"
+          [class.recording]="isRecordingDescription"
+          [disabled]="isRecordingDescription"
+          (click)="startRecordingDescription()"
+          *ngIf="speechAvailable">
+          <span class="mic-icon" [class.pulse]="isRecordingDescription">🎤</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tipo -->
+    <div class="form-group">
+      <label for="tipo">Tipo *</label>
+      <select 
+        id="tipo" 
+        [(ngModel)]="transaction.tipo" 
+        name="tipo"
+        required>
+        <option value="">Selecciona un tipo</option>
+        <option *ngFor="let tipo of tipos" [value]="tipo">{{ tipo }}</option>
+      </select>
+    </div>
+
+    <!-- Monto -->
+    <div class="form-group">
+      <label for="monto">Monto (COP) *</label>
+      <input 
+        type="number" 
+        id="monto" 
+        [(ngModel)]="transaction.monto" 
+        name="monto"
+        min="0"
+        step="0.01"
+        placeholder="0.00"
+        required>
+    </div>
+
+    <!-- Medio -->
+    <div class="form-group">
+      <label for="medio">Medio de Pago *</label>
+      <select 
+        id="medio" 
+        [(ngModel)]="transaction.medio" 
+        name="medio"
+        required>
+        <option value="">Selecciona un medio</option>
+        <option *ngFor="let medio of medios" [value]="medio">{{ medio }}</option>
+      </select>
+    </div>
+
+    <!-- Fecha -->
+    <div class="form-group">
+      <label for="fecha">Fecha *</label>
+      <input 
+        type="date" 
+        id="fecha" 
+        [(ngModel)]="transaction.fecha" 
+        name="fecha"
+        required>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="form-group">
+      <label for="observaciones">Observaciones</label>
+      <textarea 
+        id="observaciones" 
+        [(ngModel)]="transaction.observaciones" 
+        name="observaciones"
+        rows="3"
+        placeholder="Notas adicionales (opcional)"></textarea>
+    </div>
+
+    <!-- Buttons -->
+    <div class="form-actions">
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="!isFormValid() || isProcessing">
+        <span *ngIf="!isProcessing">💾 Guardar</span>
+        <span *ngIf="isProcessing" class="spinner">⏳</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-secondary"
+        (click)="resetForm()"
+        [disabled]="isProcessing">
+        🔄 Limpiar
+      </button>
+    </div>
+  </form>
+
+  <!-- AI Form Preview -->
+  <div class="ai-preview" *ngIf="!isManualMode && transaction.categoria">
+    <h3>Vista Previa</h3>
+    <div class="preview-grid">
+      <div class="preview-item">
+        <span class="label">Categoría:</span>
+        <span class="value">{{ transaction.categoria }}</span>
+      </div>
+      <div class="preview-item">
+        <span class="label">Descripción:</span>
+        <span class="value">{{ transaction.descripcion }}</span>
+      </div>
+      <div class="preview-item">
+        <span class="label">Tipo:</span>
+        <span class="value">{{ transaction.tipo }}</span>
+      </div>
+      <div class="preview-item">
+        <span class="label">Monto:</span>
+        <span class="value">{{ transaction.monto | number:'1.2-2' }} COP</span>
+      </div>
+      <div class="preview-item">
+        <span class="label">Medio:</span>
+        <span class="value">{{ transaction.medio }}</span>
+      </div>
+      <div class="preview-item">
+        <span class="label">Fecha:</span>
+        <span class="value">{{ transaction.fecha }}</span>
+      </div>
+    </div>
+    
+    <div class="form-actions">
+      <button 
+        type="button" 
+        class="btn btn-primary"
+        (click)="onSubmit()"
+        [disabled]="!isFormValid() || isProcessing">
+        <span *ngIf="!isProcessing">✅ Confirmar y Guardar</span>
+        <span *ngIf="isProcessing" class="spinner">⏳</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-secondary"
+        (click)="resetForm()"
+        [disabled]="isProcessing">
+        ❌ Cancelar
+      </button>
+    </div>
+  </div>
+
+  <!-- Message Alert -->
+  <div class="message-alert" [class]="messageType" *ngIf="message">
+    <span class="icon">
+      <span *ngIf="messageType === 'success'">✅</span>
+      <span *ngIf="messageType === 'error'">❌</span>
+      <span *ngIf="messageType === 'info'">ℹ️</span>
+    </span>
+    <span>{{ message }}</span>
+  </div>
+
+  <!-- Backup Button -->
+  <div class="backup-section">
+    <button 
+      type="button" 
+      class="btn btn-backup"
+      (click)="downloadBackup()"
+      [disabled]="isProcessing">
+      📥 Descargar Backup SQL
+    </button>
+  </div>
+</div>

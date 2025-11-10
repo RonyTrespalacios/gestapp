@@ -1,0 +1,51 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export interface Transaction {
+  id?: string;
+  categoria: string;
+  descripcion: string;
+  tipo: string;
+  monto: number;
+  medio: string;
+  fecha: string;
+  observaciones?: string;
+  valor?: number;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class TransactionService {
+  private apiUrl = `${environment.apiUrl}/transactions`;
+
+  constructor(private http: HttpClient) {}
+
+  create(transaction: Transaction): Observable<Transaction> {
+    return this.http.post<Transaction>(this.apiUrl, transaction);
+  }
+
+  getAll(): Observable<Transaction[]> {
+    return this.http.get<Transaction[]>(this.apiUrl);
+  }
+
+  getOne(id: string): Observable<Transaction> {
+    return this.http.get<Transaction>(`${this.apiUrl}/${id}`);
+  }
+
+  update(id: string, transaction: Partial<Transaction>): Observable<Transaction> {
+    return this.http.patch<Transaction>(`${this.apiUrl}/${id}`, transaction);
+  }
+
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  exportSql(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/export/sql`, {
+      responseType: 'blob'
+    });
+  }
+}
