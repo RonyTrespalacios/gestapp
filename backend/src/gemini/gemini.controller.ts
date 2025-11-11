@@ -1,7 +1,8 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiProperty } from '@nestjs/swagger';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiProperty, ApiBearerAuth } from '@nestjs/swagger';
 import { IsString, IsNotEmpty } from 'class-validator';
 import { GeminiService } from './gemini.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 class ParseTransactionDto {
   @ApiProperty({
@@ -14,6 +15,8 @@ class ParseTransactionDto {
 }
 
 @ApiTags('gemini')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('gemini')
 export class GeminiController {
   constructor(private readonly geminiService: GeminiService) {}

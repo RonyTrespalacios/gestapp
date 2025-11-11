@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
@@ -12,8 +12,11 @@ export class TransactionsService {
     private readonly transactionRepository: Repository<Transaction>,
   ) {}
 
-  async create(createTransactionDto: CreateTransactionDto): Promise<Transaction> {
-    const transaction = this.transactionRepository.create(createTransactionDto);
+  async create(createTransactionDto: CreateTransactionDto, userId: number): Promise<Transaction> {
+    const transaction = this.transactionRepository.create({
+      ...createTransactionDto,
+      userId,
+    });
     
     // Calcular el valor basado en el tipo
     transaction.valor = 
@@ -24,22 +27,25 @@ export class TransactionsService {
     return await this.transactionRepository.save(transaction);
   }
 
-  async findAll(): Promise<Transaction[]> {
+  async findAll(userId: number): Promise<Transaction[]> {
     return await this.transactionRepository.find({
+      where: { userId },
       order: { fecha: 'DESC', createdAt: 'DESC' },
     });
   }
 
-  async findOne(id: number): Promise<Transaction> {
-    const transaction = await this.transactionRepository.findOne({ where: { id } });
+  async findOne(id: number, userId: number): Promise<Transaction> {
+    const transaction = await this.transactionRepository.findOne({ 
+      where: { id, userId } 
+    });
     if (!transaction) {
       throw new NotFoundException(`Transacción con ID ${id} no encontrada`);
     }
     return transaction;
   }
 
-  async update(id: number, updateTransactionDto: UpdateTransactionDto): Promise<Transaction> {
-    const transaction = await this.findOne(id);
+  async update(id: number, updateTransactionDto: UpdateTransactionDto, userId: number): Promise<Transaction> {
+    const transaction = await this.findOne(id, userId);
     
     Object.assign(transaction, updateTransactionDto);
     
@@ -53,20 +59,19 @@ export class TransactionsService {
     return await this.transactionRepository.save(transaction);
   }
 
-  async remove(id: number): Promise<void> {
-    const transaction = await this.findOne(id);
+  async remove(id: number, userId: number): Promise<void> {
+    const transaction = await this.findOne(id, userId);
     await this.transactionRepository.remove(transaction);
 
-    // Si quedó vacío, reiniciar el autoincremental a 1
-    const total = await this.transactionRepository.count();
+    // Si el usuario ya no tiene transacciones, reiniciar su secuencia
+    const total = await this.transactionRepository.count({ where: { userId } });
     if (total === 0) {
-      // Nombre por defecto del sequence en Postgres para la tabla 'transactions'
       await this.transactionRepository.query('ALTER SEQUENCE "transactions_id_seq" RESTART WITH 1');
     }
   }
 
-  async exportToCsv(): Promise<string> {
-    const transactions = await this.findAll();
+  async exportToCsv(userId: number): Promise<string> {
+    const transactions = await this.findAll(userId);
     
     // CSV Header
     let csv = 'id,categoria,descripcion,tipo,monto,medio,fecha,observaciones,valor\n';
@@ -90,7 +95,7 @@ export class TransactionsService {
     return csv;
   }
 
-  async importFromCsv(file: Express.Multer.File): Promise<{ imported: number }> {
+  async importFromCsv(file: Express.Multer.File, userId: number): Promise<{ imported: number }> {
     if (!file) {
       throw new Error('No se proporcionó archivo');
     }
@@ -113,10 +118,10 @@ export class TransactionsService {
         if (values.length < 8) continue;
 
         const [idStr, categoria, descripcion, tipo, monto, medio, fecha, observaciones] = values;
-        const id = parseInt(idStr, 10);
 
-        // Crear objeto base de transacción
+        // Crear objeto base de transacción (sin ID, siempre asignar al usuario actual)
         const transactionData: any = {
+          userId,
           categoria,
           descripcion: descripcion.replace(/""/g, '"'),
           tipo,
@@ -125,15 +130,6 @@ export class TransactionsService {
           fecha: new Date(fecha),
           observaciones: observaciones ? observaciones.replace(/""/g, '"') : null,
         };
-
-        // Si el ID es válido y no existe, intentar usar ese ID
-        if (id && !isNaN(id)) {
-          const exists = await this.transactionRepository.findOne({ where: { id } });
-          if (!exists) {
-            transactionData.id = id;
-          }
-          // Si existe, no usar el ID (se generará automáticamente)
-        }
 
         const transaction = this.transactionRepository.create(transactionData) as unknown as Transaction;
         transaction.valor = tipo === 'Egreso' 
