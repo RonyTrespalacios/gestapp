@@ -1,0 +1,19 @@
+<app-modal 
+  [title]="modalTitle"
+  [message]="modalMessage"
+  [type]="modalType"
+  [show]="showModal"
+  (close)="closeModal()">
+</app-modal>
+
+<div class="verify-container">
+  <div class="verify-card" [class.success]="status==='success'" [class.error]="status==='error'">
+    <h1>Verificación de email</h1>
+    <p>{{ message }}</p>
+  </div>
+  <div class="back-home">
+    <a routerLink="/home">Volver al inicio</a>
+  </div>
+</div>
+
+
