@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService, User } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -12,6 +13,20 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 export class AppComponent {
   title = 'GestApp';
   sidebarOpen = false;
+  currentUser: User | null = null;
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {
+    this.authService.currentUser$.subscribe(user => {
+      this.currentUser = user;
+    });
+  }
+
+  get isAuthenticated(): boolean {
+    return this.authService.isAuthenticated;
+  }
 
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;
@@ -19,5 +34,11 @@ export class AppComponent {
 
   closeSidebar() {
     this.sidebarOpen = false;
+  }
+
+  logout() {
+    this.authService.logout();
+    this.closeSidebar();
+    this.router.navigate(['/home']);
   }
 }
