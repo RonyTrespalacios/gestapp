@@ -1,21 +1,35 @@
 <div class="form-container">
+  <!-- Modal -->
+  <app-modal 
+    [title]="modalTitle"
+    [message]="modalMessage"
+    [type]="modalType"
+    [show]="showModal"
+    (close)="closeModal()">
+  </app-modal>
+
   <!-- Mode Toggle -->
-  <div class="mode-toggle">
+  <div class="mode-toggle" *ngIf="forceManualMode === undefined">
     <button 
       type="button" 
       class="toggle-btn" 
       [class.active]="isManualMode"
       (click)="toggleMode()">
-      <span class="icon">[M]</span>
-      <span>Manual</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+      <span>Registrar manualmente</span>
     </button>
     <button 
       type="button" 
       class="toggle-btn" 
       [class.active]="!isManualMode"
       (click)="toggleMode()">
-      <span class="icon">[IA]</span>
-      <span>IA con Gemini</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span>Registrar via chat</span>
     </button>
   </div>
 
@@ -30,40 +44,10 @@
 
       <!-- Chat Messages Area -->
       <div class="chat-messages" id="chatMessages">
-        <!-- Gemini Response with Actions -->
-        <div class="chat-message assistant" *ngIf="geminiResponse && !isProcessing">
-          <div class="message-content-full">
-            <div class="response-preview">
-              <div class="preview-item">
-                <strong>Categoria:</strong> {{ transaction.categoria }}
-              </div>
-              <div class="preview-item">
-                <strong>Descripcion:</strong> {{ transaction.descripcion }}
-              </div>
-              <div class="preview-item">
-                <strong>Monto:</strong> ${{ transaction.monto | number:'1.0-0' }}
-              </div>
-              <div class="preview-item">
-                <strong>Tipo:</strong> {{ transaction.tipo }}
-              </div>
-              <div class="preview-item">
-                <strong>Medio:</strong> {{ transaction.medio }}
-              </div>
-            </div>
-            <div class="action-buttons">
-              <button 
-                type="button" 
-                class="btn btn-confirm"
-                (click)="confirmAITransaction()">
-                Confirmar
-              </button>
-              <button 
-                type="button" 
-                class="btn btn-cancel"
-                (click)="cancelAITransaction()">
-                Cancelar
-              </button>
-            </div>
+        <!-- User Message -->
+        <div class="chat-message user" *ngIf="userMessage && (isProcessing || geminiResponse)">
+          <div class="message-content-full user-message">
+            <p>{{ userMessage }}</p>
           </div>
         </div>
 
@@ -78,10 +62,67 @@
           </div>
         </div>
 
-        <!-- Initial Instructions -->
-        <div class="chat-message assistant" *ngIf="!geminiResponse && !isProcessing">
+        <!-- Gemini Response with Actions -->
+        <div class="chat-message assistant" *ngIf="geminiResponse && !isProcessing">
           <div class="message-content-full">
-            <p>Presiona el microfono y habla</p>
+            <div class="response-preview">
+              <div class="preview-item">
+                <strong>Categoria:</strong> {{ transaction.categoria }}
+              </div>
+              <div class="preview-item">
+                <strong>Descripcion:</strong> {{ transaction.descripcion || '(vacío)' }}
+              </div>
+              <div class="preview-item">
+                <strong>Tipo:</strong> {{ transaction.tipo }}
+              </div>
+              <div class="preview-item">
+                <strong>Monto:</strong> ${{ transaction.monto | number:'1.0-0' }}
+              </div>
+              <div class="preview-item">
+                <strong>Medio:</strong> {{ transaction.medio }}
+              </div>
+              <div class="preview-item">
+                <strong>Fecha:</strong> {{ transaction.fecha }}
+              </div>
+              <div class="preview-item" *ngIf="transaction.observaciones">
+                <strong>Observaciones:</strong> {{ transaction.observaciones }}
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button 
+                type="button" 
+                class="btn btn-confirm"
+                [disabled]="isProcessing"
+                (click)="confirmAITransaction()">
+                <span *ngIf="!isProcessing">Confirmar</span>
+                <span *ngIf="isProcessing">...</span>
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-edit"
+                [disabled]="isProcessing"
+                (click)="editGeminiResponse()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Editar
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-cancel"
+                [disabled]="isProcessing"
+                (click)="cancelAITransaction()">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Initial Instructions -->
+        <div class="chat-message assistant" *ngIf="!geminiResponse && !isProcessing && !userMessage">
+          <div class="message-content-full">
+            <p>Describe tu registro con lenguaje natural</p>
           </div>
         </div>
       </div>
@@ -102,28 +143,31 @@
             [disabled]="isProcessing"
             (focus)="isFocused = true"
             (blur)="isFocused = false"
+            (input)="autoResizeTextarea($any($event))"
+            (keydown.enter)="onEnterPress($any($event))"
             placeholder="Escribe o presiona el micrófono para hablar..."
             rows="1"
-            class="message-input"></textarea>
+            class="message-input"
+            #messageTextarea></textarea>
 
           <!-- Input Buttons -->
           <div class="input-buttons">
-            <button 
-              type="button"
-              class="btn-voice"
-              [class.active]="isRecording"
+            <app-mic-toggle-button
+              [isActive]="isRecording"
               [disabled]="isProcessing"
-              (click)="isRecording ? pauseRecording() : startRecordingAI()"
+              (toggle)="isRecording ? pauseRecording() : startRecordingAI()"
               title="Activar/Desactivar micrófono">
-              [MIC]
-            </button>
+            </app-mic-toggle-button>
             <button 
               type="button"
               class="btn-send"
               [disabled]="!capturedTranscript || isProcessing"
               (click)="sendTranscriptToAI()"
               title="Enviar mensaje">
-              [>]
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
             </button>
           </div>
         </div>
@@ -134,7 +178,7 @@
 
   <!-- Manual Form -->
   <form *ngIf="isManualMode" (ngSubmit)="onSubmit()" class="transaction-form">
-    
+    <div class="form-grid">
     <!-- Categoría -->
     <div class="form-group">
       <label for="categoria">Categoría *</label>
@@ -189,13 +233,12 @@
     <div class="form-group">
       <label for="monto">Monto (COP) *</label>
       <input 
-        type="number" 
+        type="text" 
         id="monto" 
-        [(ngModel)]="transaction.monto" 
+        [value]="formatMontoDisplay()" 
+        (input)="onMontoInput($any($event))"
         name="monto"
-        min="0"
-        step="0.01"
-        placeholder="0.00"
+        placeholder="0 COP"
         required>
     </div>
 
@@ -224,7 +267,7 @@
     </div>
 
     <!-- Observaciones -->
-    <div class="form-group">
+    <div class="form-group full-span">
       <label for="observaciones">Observaciones</label>
       <div class="input-with-mic">
         <textarea 
@@ -234,23 +277,18 @@
           rows="3"
           [class.recording-input]="isRecordingDescription"
           placeholder="Notas adicionales (opcional)"></textarea>
-        <button 
-          type="button" 
-          class="mic-button"
-          [class.recording]="isRecordingDescription"
-          [disabled]="isRecordingDescription"
-          (click)="startRecordingObservations()"
-          title="Dictar observaciones"
-          *ngIf="speechAvailable">
-          <span class="mic-icon" [class.pulse]="isRecordingDescription">
-            {{ isRecordingDescription ? '[REC]' : '[MIC]' }}
-          </span>
-        </button>
+        <app-mic-toggle-button
+          *ngIf="speechAvailable"
+          [isActive]="isRecordingDescription"
+          [disabled]="false"
+          (toggle)="isRecordingDescription ? pauseRecordingObservations() : startRecordingObservations()"
+          title="Activar/Desactivar micrófono">
+        </app-mic-toggle-button>
       </div>
     </div>
 
     <!-- Buttons -->
-    <div class="form-actions">
+    <div class="form-actions full-span">
       <button 
         type="submit" 
         class="btn btn-primary"
@@ -266,56 +304,8 @@
         Limpiar
       </button>
     </div>
+    </div>
   </form>
-
-  <!-- AI Form Preview -->
-  <div class="ai-preview" *ngIf="!isManualMode && transaction.categoria">
-    <h3>Vista Previa</h3>
-    <div class="preview-grid">
-      <div class="preview-item">
-        <span class="label">Categoría:</span>
-        <span class="value">{{ transaction.categoria }}</span>
-      </div>
-      <div class="preview-item">
-        <span class="label">Descripción:</span>
-        <span class="value">{{ transaction.descripcion }}</span>
-      </div>
-      <div class="preview-item">
-        <span class="label">Tipo:</span>
-        <span class="value">{{ transaction.tipo }}</span>
-      </div>
-      <div class="preview-item">
-        <span class="label">Monto:</span>
-        <span class="value">{{ transaction.monto | number:'1.2-2' }} COP</span>
-      </div>
-      <div class="preview-item">
-        <span class="label">Medio:</span>
-        <span class="value">{{ transaction.medio }}</span>
-      </div>
-      <div class="preview-item">
-        <span class="label">Fecha:</span>
-        <span class="value">{{ transaction.fecha }}</span>
-      </div>
-    </div>
-    
-    <div class="form-actions">
-      <button 
-        type="button" 
-        class="btn btn-primary"
-        (click)="onSubmit()"
-        [disabled]="!isFormValid() || isProcessing">
-        <span *ngIf="!isProcessing">Confirmar y Guardar</span>
-        <span *ngIf="isProcessing" class="spinner">...</span>
-      </button>
-      <button 
-        type="button" 
-        class="btn btn-secondary"
-        (click)="resetForm()"
-        [disabled]="isProcessing">
-        Cancelar
-      </button>
-    </div>
-  </div>
 
 
 </div>

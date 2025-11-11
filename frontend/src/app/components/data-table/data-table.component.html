@@ -1,4 +1,24 @@
 <div class="data-table-container">
+  <!-- Modal de confirmación -->
+  <app-modal 
+    [title]="'Confirmar'"
+    [message]="'¿Estás seguro de que deseas eliminar esta transacción?'"
+    [type]="'info'"
+    [show]="showConfirmModal"
+    [showConfirmButtons]="true"
+    (confirm)="confirmDelete()"
+    (close)="cancelDelete()">
+  </app-modal>
+
+  <!-- Modal de mensajes -->
+  <app-modal 
+    [title]="modalTitle"
+    [message]="modalMessage"
+    [type]="modalType"
+    [show]="showModal"
+    (close)="closeModal()">
+  </app-modal>
+
   <div class="header-section">
     <h2>Base de Datos</h2>
     
@@ -32,7 +52,6 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>ID</th>
           <th>Fecha</th>
           <th>Categoria</th>
           <th>Descripcion</th>
@@ -45,7 +64,6 @@
       </thead>
       <tbody>
         <tr *ngFor="let transaction of transactions">
-          <td>{{ transaction.id }}</td>
           <td>{{ transaction.fecha }}</td>
           <td>{{ transaction.categoria }}</td>
           <td>{{ transaction.descripcion }}</td>

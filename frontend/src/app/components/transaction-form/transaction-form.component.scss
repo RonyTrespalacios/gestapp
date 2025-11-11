@@ -1,6 +1,8 @@
 .form-container {
   width: 100%;
   max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* MODE TOGGLE */
@@ -19,7 +21,7 @@
   border: none;
   background: #fff;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-family: 'Press Start 2P', cursive;
   color: #000;
   transition: all 0.2s;
@@ -42,6 +44,7 @@
   overflow: hidden;
   max-width: 100%;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .chat-header {
@@ -52,12 +55,12 @@
 
   h3 {
     margin: 0 0 12px 0;
-    font-size: 16px;
+    font-size: 15px;
   }
 
   p {
     margin: 0;
-    font-size: 10px;
+    font-size: 9px;
   }
 }
 
@@ -66,34 +69,60 @@
   min-height: 350px;
   max-height: 600px;
   overflow-y: auto;
+  overflow-x: hidden;
   background: #fff;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .chat-message {
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: 100%;
 
   .message-content-full {
     background: #f5f5f5;
     border: 2px solid #000;
     color: #000;
     padding: 25px;
-    font-size: 12px;
+    font-size: 11px;
     line-height: 2;
     width: 100%;
+    max-width: 100%;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+
+    &.user-message {
+      background: #000;
+      color: #fff;
+      border: 2px solid #000;
+      
+      p {
+        margin: 0;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+      }
+    }
   }
 }
 
 .response-preview {
   margin-bottom: 20px;
+  max-width: 100%;
+  overflow-wrap: break-word;
 
   .preview-item {
     padding: 12px 0;
     border-bottom: 1px solid #ddd;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
 
     &:last-child {
       border-bottom: none;
@@ -115,7 +144,7 @@
     padding: 18px;
     border: 2px solid #000;
     font-family: 'Press Start 2P', cursive;
-    font-size: 12px;
+    font-size: 11px;
     cursor: pointer;
     transition: all 0.2s;
 
@@ -141,6 +170,22 @@
       &:hover {
         background: #000;
         color: #fff;
+      }
+    }
+
+    &.btn-edit {
+      background: #fff;
+      color: #000;
+      border-color: #000;
+
+      &:hover:not(:disabled) {
+        background: #000;
+        color: #fff;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
     }
   }
@@ -186,6 +231,8 @@
   padding: 20px;
   background: #f5f5f5;
   border-top: 3px solid #000;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .input-container {
@@ -197,6 +244,9 @@
   border: 3px solid #ddd;
   transition: border-color 0.3s;
   position: relative;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 
   &.focused {
     border-color: #000;
@@ -238,12 +288,20 @@
   background: transparent;
   border: none;
   color: #000;
-  font-size: 14px;
+  font-size: 13px;
   resize: none;
-  max-height: 150px;
+  min-height: 50px;
+  max-height: 400px;
+  overflow-y: auto;
   font-family: 'Press Start 2P', cursive;
   padding: 10px;
   line-height: 2;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
 
   &:focus {
     outline: none;
@@ -262,10 +320,10 @@
 
 .btn-voice,
 .btn-send {
-  width: 50px;
-  height: 50px;
+  width: 55px;
+  height: 55px;
   padding: 0;
-  font-size: 12px;
+  font-size: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -274,6 +332,10 @@
   transition: all 0.2s;
   background: #fff;
   color: #000;
+
+  svg {
+    flex-shrink: 0;
+  }
 }
 
 .btn-voice {
@@ -320,13 +382,23 @@
 
 /* MANUAL FORM */
 .transaction-form {
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .full-span {
+    grid-column: 1 / -1;
+  }
+
   .form-group {
     margin-bottom: 20px;
 
     label {
       display: block;
       margin-bottom: 12px;
-      font-size: 12px;
+      font-size: 11px;
       color: #000;
     }
 
@@ -334,7 +406,7 @@
       width: 100%;
       padding: 18px;
       border: 3px solid #000;
-      font-size: 14px;
+      font-size: 13px;
       font-family: 'Press Start 2P', cursive;
       background: #fff;
       color: #000;
@@ -382,15 +454,15 @@
     }
 
     .mic-button {
-      width: 50px;
-      height: 50px;
+      width: 55px;
+      height: 55px;
       flex-shrink: 0;
       padding: 0;
       border: 3px solid #000;
       background: #fff;
       color: #000;
       cursor: pointer;
-      font-size: 11px;
+      font-size: 24px;
       transition: all 0.2s;
 
       &:hover:not(:disabled) {
@@ -401,12 +473,11 @@
       &.recording {
         background: #000;
         color: #fff;
-        animation: recordingPulse 1.5s infinite;
+        animation: voicePulse 1.5s infinite;
       }
 
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+      .mic-icon {
+        display: block;
       }
     }
   }
@@ -417,6 +488,19 @@
     border-color: #000;
     box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.3);
     animation: recordingPulse 1.5s infinite;
+  }
+}
+
+@media (max-width: 768px) {
+  .transaction-form {
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .full-span {
+      grid-column: auto;
+    }
   }
 }
 
@@ -481,7 +565,7 @@
   flex: 1;
   padding: 20px;
   border: 3px solid #000;
-  font-size: 14px;
+  font-size: 13px;
   font-family: 'Press Start 2P', cursive;
   cursor: pointer;
   transition: all 0.2s;
@@ -553,11 +637,32 @@
     min-height: 300px;
     max-height: 450px;
     padding: 15px;
+    padding-left: 10px;
+    padding-right: 10px;
   }
 
   .message-content-full {
     padding: 15px;
+    padding-left: 10px;
+    padding-right: 10px;
     font-size: 10px;
+  }
+
+  .chat-input-area {
+    padding: 15px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .input-container {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .message-input {
+    font-size: 11px;
+    padding: 8px;
+    min-height: 40px;
   }
 
   .action-buttons {
@@ -575,9 +680,9 @@
 
   .btn-voice,
   .btn-send {
-    width: 45px;
-    height: 45px;
-    font-size: 20px;
+    width: 50px;
+    height: 50px;
+    font-size: 22px;
   }
 
   .form-actions {
@@ -601,9 +706,9 @@
     }
 
     .input-with-mic .mic-button {
-      width: 45px;
-      height: 45px;
-      font-size: 18px;
+      width: 50px;
+      height: 50px;
+      font-size: 22px;
     }
   }
 }

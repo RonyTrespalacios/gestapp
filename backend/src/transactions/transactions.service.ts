@@ -30,7 +30,7 @@ export class TransactionsService {
     });
   }
 
-  async findOne(id: string): Promise<Transaction> {
+  async findOne(id: number): Promise<Transaction> {
     const transaction = await this.transactionRepository.findOne({ where: { id } });
     if (!transaction) {
       throw new NotFoundException(`Transacción con ID ${id} no encontrada`);
@@ -38,7 +38,7 @@ export class TransactionsService {
     return transaction;
   }
 
-  async update(id: string, updateTransactionDto: UpdateTransactionDto): Promise<Transaction> {
+  async update(id: number, updateTransactionDto: UpdateTransactionDto): Promise<Transaction> {
     const transaction = await this.findOne(id);
     
     Object.assign(transaction, updateTransactionDto);
@@ -53,7 +53,7 @@ export class TransactionsService {
     return await this.transactionRepository.save(transaction);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: number): Promise<void> {
     const transaction = await this.findOne(id);
     await this.transactionRepository.remove(transaction);
   }
@@ -105,30 +105,36 @@ export class TransactionsService {
         
         if (values.length < 8) continue;
 
-        const [id, categoria, descripcion, tipo, monto, medio, fecha, observaciones] = values;
+        const [idStr, categoria, descripcion, tipo, monto, medio, fecha, observaciones] = values;
+        const id = parseInt(idStr, 10);
 
-        // Check if transaction already exists
-        const exists = await this.transactionRepository.findOne({ where: { id } });
-        
-        if (!exists) {
-          const transaction = this.transactionRepository.create({
-            id,
-            categoria,
-            descripcion: descripcion.replace(/""/g, '"'),
-            tipo,
-            monto: parseFloat(monto),
-            medio,
-            fecha,
-            observaciones: observaciones ? observaciones.replace(/""/g, '"') : null,
-          });
+        // Crear objeto base de transacción
+        const transactionData: any = {
+          categoria,
+          descripcion: descripcion.replace(/""/g, '"'),
+          tipo,
+          monto: parseFloat(monto),
+          medio,
+          fecha: new Date(fecha),
+          observaciones: observaciones ? observaciones.replace(/""/g, '"') : null,
+        };
 
-          transaction.valor = tipo === 'Egreso' 
-            ? -Math.abs(parseFloat(monto))
-            : Math.abs(parseFloat(monto));
-
-          await this.transactionRepository.save(transaction);
-          imported++;
+        // Si el ID es válido y no existe, intentar usar ese ID
+        if (id && !isNaN(id)) {
+          const exists = await this.transactionRepository.findOne({ where: { id } });
+          if (!exists) {
+            transactionData.id = id;
+          }
+          // Si existe, no usar el ID (se generará automáticamente)
         }
+
+        const transaction = this.transactionRepository.create(transactionData) as unknown as Transaction;
+        transaction.valor = tipo === 'Egreso' 
+          ? -Math.abs(parseFloat(monto))
+          : Math.abs(parseFloat(monto));
+
+        await this.transactionRepository.save(transaction);
+        imported++;
       } catch (error) {
         console.error('Error processing line:', line, error);
       }

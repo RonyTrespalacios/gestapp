@@ -1,0 +1,43 @@
+.btn-voice {
+  width: 55px;
+  height: 55px;
+  padding: 0;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #000;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+  color: #000;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover:not(:disabled) {
+    background: #000;
+    color: #fff;
+  }
+
+  &.active {
+    background: #000;
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@media (max-width: 768px) {
+  .btn-voice {
+    width: 50px;
+    height: 50px;
+    font-size: 22px;
+  }
+}
+
+

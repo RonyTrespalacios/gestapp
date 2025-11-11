@@ -63,20 +63,20 @@ export class TransactionsController {
   @ApiResponse({ status: 200, description: 'Transacción encontrada' })
   @ApiResponse({ status: 404, description: 'Transacción no encontrada' })
   findOne(@Param('id') id: string) {
-    return this.transactionsService.findOne(id);
+    return this.transactionsService.findOne(+id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar transacción' })
   @ApiResponse({ status: 200, description: 'Transacción actualizada' })
   update(@Param('id') id: string, @Body() updateTransactionDto: UpdateTransactionDto) {
-    return this.transactionsService.update(id, updateTransactionDto);
+    return this.transactionsService.update(+id, updateTransactionDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Eliminar transacción' })
   @ApiResponse({ status: 200, description: 'Transacción eliminada' })
   remove(@Param('id') id: string) {
-    return this.transactionsService.remove(id);
+    return this.transactionsService.remove(+id);
   }
 }

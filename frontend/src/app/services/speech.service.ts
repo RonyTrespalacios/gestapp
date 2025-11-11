@@ -91,7 +91,7 @@ export class SpeechService {
       let interimTranscript = '';
       let finalTranscript = '';
 
-      // Iterar por todos los resultados (igual que en tu ejemplo)
+      // Iterar por todos los resultados
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         
@@ -105,17 +105,14 @@ export class SpeechService {
       // Actualizar el transcript completo con resultados finales
       if (finalTranscript) {
         fullTranscript += finalTranscript;
-        subject.next({ 
-          transcript: fullTranscript.trim(), 
-          isFinal: true 
-        });
       }
 
-      // Emitir transcripción temporal (mientras hablas)
-      if (interimTranscript) {
+      // Emitir transcripción en tiempo real (sin marcar como final automáticamente)
+      const currentTranscript = (fullTranscript + interimTranscript).trim();
+      if (currentTranscript) {
         subject.next({ 
-          transcript: (fullTranscript + interimTranscript).trim(), 
-          isFinal: false 
+          transcript: currentTranscript, 
+          isFinal: false  // Nunca marcar como final automáticamente
         });
       }
     };

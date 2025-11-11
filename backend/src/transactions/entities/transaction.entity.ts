@@ -8,8 +8,8 @@ import {
 
 @Entity('transactions')
 export class Transaction {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({
     type: 'enum',
