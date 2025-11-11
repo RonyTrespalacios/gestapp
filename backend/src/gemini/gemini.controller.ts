@@ -1,8 +1,15 @@
 import { Controller, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty } from 'class-validator';
 import { GeminiService } from './gemini.service';
 
 class ParseTransactionDto {
+  @ApiProperty({
+    description: 'Texto del usuario describiendo la transacción',
+    example: 'Ayer gasté 2500 pesos en un helado'
+  })
+  @IsString()
+  @IsNotEmpty()
   userInput: string;
 }
 

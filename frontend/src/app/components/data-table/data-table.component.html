@@ -1,0 +1,81 @@
+<div class="data-table-container">
+  <div class="header-section">
+    <h2>Base de Datos</h2>
+    
+    <div class="actions">
+      <button (click)="downloadCSV()" class="btn btn-download">
+        Descargar CSV
+      </button>
+      
+      <div class="upload-section">
+        <input 
+          type="file" 
+          accept=".csv"
+          (change)="onFileSelected($event)"
+          id="csvFile"
+          class="file-input">
+        <label for="csvFile" class="btn btn-secondary">
+          Seleccionar CSV
+        </label>
+        <button 
+          *ngIf="selectedFile"
+          (click)="uploadCSV()" 
+          class="btn btn-upload"
+          [disabled]="isLoading">
+          Importar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrapper" *ngIf="!isLoading && transactions.length > 0">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Fecha</th>
+          <th>Categoria</th>
+          <th>Descripcion</th>
+          <th>Tipo</th>
+          <th>Monto</th>
+          <th>Medio</th>
+          <th>Observaciones</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let transaction of transactions">
+          <td>{{ transaction.id }}</td>
+          <td>{{ transaction.fecha }}</td>
+          <td>{{ transaction.categoria }}</td>
+          <td>{{ transaction.descripcion }}</td>
+          <td>{{ transaction.tipo }}</td>
+          <td>${{ transaction.monto | number:'1.0-0' }}</td>
+          <td>{{ transaction.medio }}</td>
+          <td>{{ transaction.observaciones || '-' }}</td>
+          <td>
+            <button 
+              (click)="deleteTransaction(transaction.id!)" 
+              class="btn btn-delete">
+              X
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="loading" *ngIf="isLoading">
+    <div class="loading-dots">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+
+  <div class="no-data" *ngIf="!isLoading && transactions.length === 0">
+    <p>No hay datos</p>
+  </div>
+</div>
+
+

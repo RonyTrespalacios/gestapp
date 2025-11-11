@@ -6,7 +6,7 @@
       class="toggle-btn" 
       [class.active]="isManualMode"
       (click)="toggleMode()">
-      <span class="icon">📝</span>
+      <span class="icon">[M]</span>
       <span>Manual</span>
     </button>
     <button 
@@ -14,30 +14,122 @@
       class="toggle-btn" 
       [class.active]="!isManualMode"
       (click)="toggleMode()">
-      <span class="icon">🤖</span>
+      <span class="icon">[IA]</span>
       <span>IA con Gemini</span>
     </button>
   </div>
 
-  <!-- AI Mode -->
-  <div class="ai-mode" *ngIf="!isManualMode">
-    <div class="ai-instructions">
-      <p>🎤 Presiona el micrófono y di algo como:</p>
-      <p class="example">"Ayer gasté 2500 pesos en un helado"</p>
-      <p class="example">"Hoy recibí mi salario de 3500000 pesos"</p>
+  <!-- AI Mode - Chat Interface -->
+  <div class="ai-mode chat-interface" *ngIf="!isManualMode">
+    <div class="chat-container">
+      <!-- Chat Header -->
+      <div class="chat-header">
+        <h3>Asistente de Voz con IA</h3>
+        <p>Habla, edita y envia tu transaccion</p>
+      </div>
+
+      <!-- Chat Messages Area -->
+      <div class="chat-messages" id="chatMessages">
+        <!-- Gemini Response with Actions -->
+        <div class="chat-message assistant" *ngIf="geminiResponse && !isProcessing">
+          <div class="message-content-full">
+            <div class="response-preview">
+              <div class="preview-item">
+                <strong>Categoria:</strong> {{ transaction.categoria }}
+              </div>
+              <div class="preview-item">
+                <strong>Descripcion:</strong> {{ transaction.descripcion }}
+              </div>
+              <div class="preview-item">
+                <strong>Monto:</strong> ${{ transaction.monto | number:'1.0-0' }}
+              </div>
+              <div class="preview-item">
+                <strong>Tipo:</strong> {{ transaction.tipo }}
+              </div>
+              <div class="preview-item">
+                <strong>Medio:</strong> {{ transaction.medio }}
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button 
+                type="button" 
+                class="btn btn-confirm"
+                (click)="confirmAITransaction()">
+                Confirmar
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-cancel"
+                (click)="cancelAITransaction()">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Processing Indicator -->
+        <div class="chat-message assistant" *ngIf="isProcessing">
+          <div class="message-content-full">
+            <div class="loading-message">
+              <div class="loading-dot"></div>
+              <div class="loading-dot"></div>
+              <div class="loading-dot"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Initial Instructions -->
+        <div class="chat-message assistant" *ngIf="!geminiResponse && !isProcessing">
+          <div class="message-content-full">
+            <p>Presiona el microfono y habla</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Input Area (Estilo reference_software) -->
+      <div class="chat-input-area">
+        <div class="input-container" [class.focused]="isFocused">
+          <!-- Voice Indicator -->
+          <div class="voice-indicator" *ngIf="isRecording">
+            <div class="pulse"></div>
+            <span>Escuchando...</span>
+          </div>
+
+          <!-- Textarea Input -->
+          <textarea 
+            id="messageInput"
+            [(ngModel)]="capturedTranscript"
+            [disabled]="isProcessing"
+            (focus)="isFocused = true"
+            (blur)="isFocused = false"
+            placeholder="Escribe o presiona el micrófono para hablar..."
+            rows="1"
+            class="message-input"></textarea>
+
+          <!-- Input Buttons -->
+          <div class="input-buttons">
+            <button 
+              type="button"
+              class="btn-voice"
+              [class.active]="isRecording"
+              [disabled]="isProcessing"
+              (click)="isRecording ? pauseRecording() : startRecordingAI()"
+              title="Activar/Desactivar micrófono">
+              [MIC]
+            </button>
+            <button 
+              type="button"
+              class="btn-send"
+              [disabled]="!capturedTranscript || isProcessing"
+              (click)="sendTranscriptToAI()"
+              title="Enviar mensaje">
+              [>]
+            </button>
+          </div>
+        </div>
+
+      </div>
     </div>
-    
-    <button 
-      type="button" 
-      class="mic-button large"
-      [class.recording]="isRecording"
-      [disabled]="isRecording || isProcessing"
-      (click)="startRecordingAI()">
-      <span class="mic-icon" [class.pulse]="isRecording">🎤</span>
-      <span *ngIf="!isRecording && !isProcessing">Hablar</span>
-      <span *ngIf="isRecording">Escuchando...</span>
-      <span *ngIf="isProcessing">Procesando...</span>
-    </button>
   </div>
 
   <!-- Manual Form -->
@@ -59,35 +151,25 @@
 
     <!-- Descripción -->
     <div class="form-group">
-      <label for="descripcion">Descripción *</label>
-      <div class="input-with-mic">
-        <select 
-          *ngIf="transaction.categoria && descripcionesDisponibles.length > 0"
-          id="descripcion" 
-          [(ngModel)]="transaction.descripcion" 
-          name="descripcion"
-          required>
-          <option value="">Selecciona una descripción</option>
-          <option *ngFor="let desc of descripcionesDisponibles" [value]="desc">{{ desc }}</option>
-        </select>
-        <input 
-          *ngIf="!transaction.categoria || descripcionesDisponibles.length === 0"
-          type="text" 
-          id="descripcion" 
-          [(ngModel)]="transaction.descripcion" 
-          name="descripcion"
-          placeholder="Descripción de la transacción"
-          required>
-        <button 
-          type="button" 
-          class="mic-button"
-          [class.recording]="isRecordingDescription"
-          [disabled]="isRecordingDescription"
-          (click)="startRecordingDescription()"
-          *ngIf="speechAvailable">
-          <span class="mic-icon" [class.pulse]="isRecordingDescription">🎤</span>
-        </button>
-      </div>
+      <label for="descripcion">Descripcion *</label>
+      <select 
+        *ngIf="transaction.categoria && descripcionesDisponibles.length > 0"
+        id="descripcion" 
+        [(ngModel)]="transaction.descripcion" 
+        name="descripcion"
+        required>
+        <option value="">Selecciona una descripcion</option>
+        <option *ngFor="let desc of descripcionesDisponibles" [value]="desc">{{ desc }}</option>
+      </select>
+      <input 
+        *ngIf="!transaction.categoria || descripcionesDisponibles.length === 0"
+        type="text" 
+        id="descripcion" 
+        [(ngModel)]="transaction.descripcion" 
+        name="descripcion"
+        placeholder="Descripcion de la transaccion"
+        [disabled]="!transaction.categoria"
+        required>
     </div>
 
     <!-- Tipo -->
@@ -144,12 +226,27 @@
     <!-- Observaciones -->
     <div class="form-group">
       <label for="observaciones">Observaciones</label>
-      <textarea 
-        id="observaciones" 
-        [(ngModel)]="transaction.observaciones" 
-        name="observaciones"
-        rows="3"
-        placeholder="Notas adicionales (opcional)"></textarea>
+      <div class="input-with-mic">
+        <textarea 
+          id="observaciones" 
+          [(ngModel)]="transaction.observaciones" 
+          name="observaciones"
+          rows="3"
+          [class.recording-input]="isRecordingDescription"
+          placeholder="Notas adicionales (opcional)"></textarea>
+        <button 
+          type="button" 
+          class="mic-button"
+          [class.recording]="isRecordingDescription"
+          [disabled]="isRecordingDescription"
+          (click)="startRecordingObservations()"
+          title="Dictar observaciones"
+          *ngIf="speechAvailable">
+          <span class="mic-icon" [class.pulse]="isRecordingDescription">
+            {{ isRecordingDescription ? '[REC]' : '[MIC]' }}
+          </span>
+        </button>
+      </div>
     </div>
 
     <!-- Buttons -->
@@ -158,15 +255,15 @@
         type="submit" 
         class="btn btn-primary"
         [disabled]="!isFormValid() || isProcessing">
-        <span *ngIf="!isProcessing">💾 Guardar</span>
-        <span *ngIf="isProcessing" class="spinner">⏳</span>
+        <span *ngIf="!isProcessing">Guardar</span>
+        <span *ngIf="isProcessing" class="spinner">...</span>
       </button>
       <button 
         type="button" 
         class="btn btn-secondary"
         (click)="resetForm()"
         [disabled]="isProcessing">
-        🔄 Limpiar
+        Limpiar
       </button>
     </div>
   </form>
@@ -207,37 +304,18 @@
         class="btn btn-primary"
         (click)="onSubmit()"
         [disabled]="!isFormValid() || isProcessing">
-        <span *ngIf="!isProcessing">✅ Confirmar y Guardar</span>
-        <span *ngIf="isProcessing" class="spinner">⏳</span>
+        <span *ngIf="!isProcessing">Confirmar y Guardar</span>
+        <span *ngIf="isProcessing" class="spinner">...</span>
       </button>
       <button 
         type="button" 
         class="btn btn-secondary"
         (click)="resetForm()"
         [disabled]="isProcessing">
-        ❌ Cancelar
+        Cancelar
       </button>
     </div>
   </div>
 
-  <!-- Message Alert -->
-  <div class="message-alert" [class]="messageType" *ngIf="message">
-    <span class="icon">
-      <span *ngIf="messageType === 'success'">✅</span>
-      <span *ngIf="messageType === 'error'">❌</span>
-      <span *ngIf="messageType === 'info'">ℹ️</span>
-    </span>
-    <span>{{ message }}</span>
-  </div>
 
-  <!-- Backup Button -->
-  <div class="backup-section">
-    <button 
-      type="button" 
-      class="btn btn-backup"
-      (click)="downloadBackup()"
-      [disabled]="isProcessing">
-      📥 Descargar Backup SQL
-    </button>
-  </div>
 </div>

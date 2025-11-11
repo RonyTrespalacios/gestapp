@@ -14,6 +14,9 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
+  // Prefijo global para todas las rutas
+  app.setGlobalPrefix('api');
+
   // Validación global
   app.useGlobalPipes(
     new ValidationPipe({

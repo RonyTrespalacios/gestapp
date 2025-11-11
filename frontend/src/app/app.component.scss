@@ -1,53 +1,79 @@
-.app-container {
+.app-wrapper {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
 }
 
-.app-header {
-  text-align: center;
-  color: white;
-  margin-bottom: 30px;
-  animation: fadeIn 0.6s ease-in;
-
+.header {
+  background: #f5f5f5;
+  padding: 25px;
+  border-bottom: 3px solid #000;
+  
   h1 {
-    font-size: 3rem;
-    margin: 0;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    margin: 0 0 15px 0;
+    font-size: 2.5rem;
+    color: #000;
+    text-align: center;
   }
 
-  p {
-    font-size: 1.2rem;
-    opacity: 0.9;
+  .nav {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+  }
+
+  .nav-link {
+    padding: 15px 30px;
+    background: #fff;
+    color: #000;
+    text-decoration: none;
+    border: 2px solid #000;
+    font-size: 14px;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #000;
+      color: #fff;
+    }
+
+    &.active {
+      background: #000;
+      color: #fff;
+    }
   }
 }
 
-.app-main {
-  max-width: 800px;
+.main-content {
+  flex: 1;
+  padding: 30px 20px;
+  max-width: 900px;
+  width: 100%;
   margin: 0 auto;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @media (max-width: 768px) {
-  .app-container {
-    padding: 10px;
-  }
+  .header {
+    padding: 20px 15px;
 
-  .app-header h1 {
-    font-size: 2rem;
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+    }
+
+    .nav {
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .nav-link {
+      text-align: center;
+      font-size: 12px;
+      padding: 12px 20px;
+    }
   }
   
-  .app-header p {
-    font-size: 1rem;
+  .main-content {
+    padding: 20px 10px;
   }
 }

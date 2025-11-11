@@ -8,8 +8,11 @@ import {
   Delete,
   Res,
   HttpStatus,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiResponse, ApiConsumes } from '@nestjs/swagger';
 import { Response } from 'express';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -34,16 +37,25 @@ export class TransactionsController {
     return this.transactionsService.findAll();
   }
 
-  @Get('export/sql')
-  @ApiOperation({ summary: 'Exportar backup en formato SQL' })
-  @ApiResponse({ status: 200, description: 'Archivo SQL generado' })
-  async exportSql(@Res() res: Response) {
-    const sql = await this.transactionsService.exportToSql();
-    const filename = `gestapp_backup_${new Date().toISOString().split('T')[0]}.sql`;
+  @Get('export/csv')
+  @ApiOperation({ summary: 'Exportar backup en formato CSV' })
+  @ApiResponse({ status: 200, description: 'Archivo CSV generado' })
+  async exportCsv(@Res() res: Response) {
+    const csv = await this.transactionsService.exportToCsv();
+    const filename = `gestapp_backup_${new Date().toISOString().split('T')[0]}.csv`;
     
-    res.setHeader('Content-Type', 'application/sql');
+    res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.status(HttpStatus.OK).send(sql);
+    res.status(HttpStatus.OK).send(csv);
+  }
+
+  @Post('import/csv')
+  @ApiOperation({ summary: 'Importar transacciones desde CSV' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({ status: 200, description: 'CSV importado exitosamente' })
+  @UseInterceptors(FileInterceptor('file'))
+  async importCsv(@UploadedFile() file: Express.Multer.File) {
+    return this.transactionsService.importFromCsv(file);
   }
 
   @Get(':id')

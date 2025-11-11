@@ -58,42 +58,109 @@ export class TransactionsService {
     await this.transactionRepository.remove(transaction);
   }
 
-  async exportToSql(): Promise<string> {
+  async exportToCsv(): Promise<string> {
     const transactions = await this.findAll();
     
-    let sql = '-- Backup de GestApp\n';
-    sql += `-- Fecha: ${new Date().toISOString()}\n\n`;
-    sql += 'CREATE TABLE IF NOT EXISTS transactions (\n';
-    sql += '  id UUID PRIMARY KEY,\n';
-    sql += '  categoria VARCHAR(50) NOT NULL,\n';
-    sql += '  descripcion VARCHAR(255) NOT NULL,\n';
-    sql += '  tipo VARCHAR(20) NOT NULL,\n';
-    sql += '  monto DECIMAL(15,2) NOT NULL,\n';
-    sql += '  medio VARCHAR(50) NOT NULL,\n';
-    sql += '  fecha DATE NOT NULL,\n';
-    sql += '  observaciones TEXT,\n';
-    sql += '  valor DECIMAL(15,2) NOT NULL,\n';
-    sql += '  "createdAt" TIMESTAMP NOT NULL,\n';
-    sql += '  "updatedAt" TIMESTAMP NOT NULL\n';
-    sql += ');\n\n';
-
+    // CSV Header
+    let csv = 'id,categoria,descripcion,tipo,monto,medio,fecha,observaciones,valor\n';
+    
+    // CSV Rows
     transactions.forEach(t => {
-      const values = [
-        `'${t.id}'`,
-        `'${t.categoria}'`,
-        `'${t.descripcion.replace(/'/g, "''")}'`,
-        `'${t.tipo}'`,
+      const row = [
+        t.id,
+        t.categoria,
+        `"${t.descripcion.replace(/"/g, '""')}"`,
+        t.tipo,
         t.monto,
-        `'${t.medio}'`,
-        `'${t.fecha}'`,
-        t.observaciones ? `'${t.observaciones.replace(/'/g, "''")}'` : 'NULL',
+        t.medio,
+        t.fecha,
+        t.observaciones ? `"${t.observaciones.replace(/"/g, '""')}"` : '',
         t.valor,
-        `'${t.createdAt.toISOString()}'`,
-        `'${t.updatedAt.toISOString()}'`,
       ];
-      sql += `INSERT INTO transactions VALUES (${values.join(', ')});\n`;
+      csv += row.join(',') + '\n';
     });
 
-    return sql;
+    return csv;
+  }
+
+  async importFromCsv(file: Express.Multer.File): Promise<{ imported: number }> {
+    if (!file) {
+      throw new Error('No se proporcionó archivo');
+    }
+
+    const content = file.buffer.toString('utf-8');
+    const lines = content.split('\n').filter(line => line.trim());
+    
+    if (lines.length < 2) {
+      throw new Error('El archivo CSV está vacío');
+    }
+
+    // Skip header
+    const dataLines = lines.slice(1);
+    let imported = 0;
+
+    for (const line of dataLines) {
+      try {
+        const values = this.parseCSVLine(line);
+        
+        if (values.length < 8) continue;
+
+        const [id, categoria, descripcion, tipo, monto, medio, fecha, observaciones] = values;
+
+        // Check if transaction already exists
+        const exists = await this.transactionRepository.findOne({ where: { id } });
+        
+        if (!exists) {
+          const transaction = this.transactionRepository.create({
+            id,
+            categoria,
+            descripcion: descripcion.replace(/""/g, '"'),
+            tipo,
+            monto: parseFloat(monto),
+            medio,
+            fecha,
+            observaciones: observaciones ? observaciones.replace(/""/g, '"') : null,
+          });
+
+          transaction.valor = tipo === 'Egreso' 
+            ? -Math.abs(parseFloat(monto))
+            : Math.abs(parseFloat(monto));
+
+          await this.transactionRepository.save(transaction);
+          imported++;
+        }
+      } catch (error) {
+        console.error('Error processing line:', line, error);
+      }
+    }
+
+    return { imported };
+  }
+
+  private parseCSVLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    result.push(current);
+    return result;
   }
 }

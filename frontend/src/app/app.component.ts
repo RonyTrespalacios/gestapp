@@ -1,20 +1,23 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
-import { TransactionFormComponent } from './components/transaction-form/transaction-form.component';
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, TransactionFormComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <div class="app-container">
-      <header class="app-header">
-        <h1>💰 GestApp</h1>
-        <p>Gestión de Gastos Personales</p>
+    <div class="app-wrapper">
+      <header class="header">
+        <h1>GestApp</h1>
+        <nav class="nav">
+          <a routerLink="/registrar" routerLinkActive="active" class="nav-link">Registrar</a>
+          <a routerLink="/datos" routerLinkActive="active" class="nav-link">Ver Datos</a>
+        </nav>
       </header>
-      <main class="app-main">
-        <app-transaction-form></app-transaction-form>
+
+      <main class="main-content">
+        <router-outlet></router-outlet>
       </main>
     </div>
   `,

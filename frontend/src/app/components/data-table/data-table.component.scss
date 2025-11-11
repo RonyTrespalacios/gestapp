@@ -1,0 +1,211 @@
+.data-table-container {
+  width: 100%;
+}
+
+.header-section {
+  margin-bottom: 30px;
+  
+  h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #000;
+  }
+
+  .actions {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .upload-section {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .file-input {
+    display: none;
+  }
+}
+
+.btn {
+  padding: 15px 25px;
+  border: 2px solid #000;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #000;
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.btn-download {
+    background: #000;
+    color: #fff;
+
+    &:hover {
+      background: #fff;
+      color: #000;
+    }
+  }
+
+  &.btn-delete {
+    padding: 8px 12px;
+    font-size: 10px;
+    background: #000;
+    color: #fff;
+
+    &:hover {
+      background: #fff;
+      color: #000;
+    }
+  }
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border: 3px solid #000;
+  background: #fff;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+
+  thead {
+    background: #f5f5f5;
+    
+    th {
+      padding: 20px 15px;
+      text-align: left;
+      border-bottom: 2px solid #000;
+      border-right: 1px solid #ddd;
+      color: #000;
+      font-size: 12px;
+
+      &:last-child {
+        border-right: none;
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #ddd;
+
+      &:hover {
+        background: #f5f5f5;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    td {
+      padding: 15px;
+      border-right: 1px solid #ddd;
+      color: #000;
+
+      &:last-child {
+        border-right: none;
+        text-align: center;
+      }
+    }
+  }
+}
+
+.loading {
+  text-align: center;
+  padding: 50px;
+}
+
+.loading-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+
+  .dot {
+    width: 15px;
+    height: 15px;
+    background: #000;
+    animation: bounce 1.4s infinite;
+
+    &:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+  }
+  40% {
+    transform: scale(1.2);
+  }
+}
+
+.no-data {
+  text-align: center;
+  padding: 50px;
+  font-size: 16px;
+  color: #000;
+  border: 3px solid #000;
+  background: #fff;
+}
+
+@media (max-width: 768px) {
+  .header-section {
+    h2 {
+      font-size: 1.5rem;
+    }
+
+    .actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .upload-section {
+      flex-direction: column;
+    }
+  }
+
+  .data-table {
+    font-size: 9px;
+
+    thead th {
+      padding: 12px 8px;
+      font-size: 10px;
+    }
+
+    tbody td {
+      padding: 10px 8px;
+    }
+  }
+
+  .btn {
+    font-size: 10px;
+    padding: 12px 20px;
+  }
+}
+

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TransactionService, Transaction } from '../../services/transaction.service';
 import { GeminiService } from '../../services/gemini.service';
-import { SpeechService } from '../../services/speech.service';
+import { SpeechService, SpeechResult } from '../../services/speech.service';
 
 @Component({
   selector: 'app-transaction-form',
@@ -42,6 +42,11 @@ export class TransactionFormComponent implements OnInit {
   message = '';
   messageType: 'success' | 'error' | 'info' = 'info';
   speechAvailable = false;
+  capturedTranscript = ''; // Almacena el texto capturado en tiempo real
+  geminiResponse: any = null; // Almacena la respuesta JSON de Gemini
+  showJsonResponse = false; // Toggle para mostrar/ocultar JSON
+  canEdit = false; // Indica si el usuario puede editar el texto capturado
+  isFocused = false; // Indica si el textarea está enfocado
 
   constructor(
     private transactionService: TransactionService,
@@ -67,6 +72,9 @@ export class TransactionFormComponent implements OnInit {
     } else if (this.transaction.categoria === 'Necesidad' || this.transaction.categoria === 'Lujo') {
       this.transaction.tipo = 'Egreso';
     }
+
+    // Reset descripción cuando cambia categoría
+    this.transaction.descripcion = '';
   }
 
   toggleMode() {
@@ -75,24 +83,27 @@ export class TransactionFormComponent implements OnInit {
     this.clearMessage();
   }
 
-  startRecordingDescription() {
+  startRecordingObservations() {
     if (!this.speechAvailable) {
-      this.showMessage('Speech recognition no está disponible en tu navegador', 'error');
       return;
     }
 
     this.isRecordingDescription = true;
-    this.showMessage('Escuchando...', 'info');
+    this.transaction.observaciones = '';
 
-    this.speechService.listen().subscribe({
-      next: (text) => {
-        this.transaction.descripcion = text;
-        this.isRecordingDescription = false;
-        this.showMessage('Descripción capturada', 'success');
+    this.speechService.listenRealTime().subscribe({
+      next: (result: SpeechResult) => {
+        this.transaction.observaciones = result.transcript;
+        
+        if (result.isFinal) {
+          this.isRecordingDescription = false;
+        }
       },
-      error: (error) => {
+      error: (error: any) => {
         this.isRecordingDescription = false;
-        this.showMessage('Error al capturar audio: ' + error, 'error');
+      },
+      complete: () => {
+        this.isRecordingDescription = false;
       }
     });
   }
@@ -105,40 +116,99 @@ export class TransactionFormComponent implements OnInit {
 
     this.isRecording = true;
     this.isProcessing = false;
-    this.showMessage('Escuchando... Di algo como: "Ayer gasté 2500 pesos en un helado"', 'info');
+    this.canEdit = false;
+    this.capturedTranscript = ''; // Limpiar transcripción anterior
+    this.geminiResponse = null;
+    this.showJsonResponse = false;
+    this.showMessage('Escuchando... Habla ahora', 'info');
 
-    this.speechService.listen().subscribe({
-      next: (text) => {
-        this.isRecording = false;
-        this.isProcessing = true;
-        this.showMessage('Procesando con IA...', 'info');
+    // Usar transcripción en tiempo real
+    this.speechService.listenRealTime().subscribe({
+      next: (result: SpeechResult) => {
+        // Actualizar transcripción en tiempo real (muestra mientras hablas)
+        this.capturedTranscript = result.transcript;
+        this.showMessage(`"${result.transcript}"`, 'info');
         
-        this.geminiService.parseTransaction(text).subscribe({
-          next: (parsedTransaction) => {
-            this.transaction = {
-              ...parsedTransaction,
-              observaciones: this.transaction.observaciones
-            };
-            this.onCategoriaChange();
-            this.isProcessing = false;
-            this.showMessage('¡Transacción completada! Verifica y guarda', 'success');
-          },
-          error: (error) => {
-            this.isProcessing = false;
-            this.showMessage('Error al procesar con IA: ' + error.message, 'error');
-          }
-        });
+        if (result.isFinal) {
+          // Cuando termina de hablar, permitir edición
+          this.isRecording = false;
+          this.canEdit = true;
+          this.showMessage('Captura finalizada. Puedes editar el texto o enviarlo directamente.', 'success');
+        }
       },
-      error: (error) => {
+      error: (error: any) => {
         this.isRecording = false;
+        this.capturedTranscript = '';
+        this.canEdit = false;
         this.showMessage('Error al capturar audio: ' + error, 'error');
+      },
+      complete: () => {
+        this.isRecording = false;
       }
     });
   }
 
+  pauseRecording() {
+    if (this.isRecording) {
+      this.speechService.stop();
+      this.isRecording = false;
+      this.canEdit = true;
+      this.showMessage('Grabacion pausada. Puedes editar el texto o continuar.', 'info');
+    }
+  }
+
+  sendTranscriptToAI() {
+    if (!this.capturedTranscript.trim()) {
+      return;
+    }
+
+    // Detener el reconocimiento de voz si está activo
+    if (this.isRecording) {
+      this.speechService.stop();
+      this.isRecording = false;
+    }
+
+    const userMessage = this.capturedTranscript;
+    this.capturedTranscript = '';
+    this.isProcessing = true;
+    
+    this.geminiService.parseTransaction(userMessage).subscribe({
+      next: (parsedTransaction: any) => {
+        this.geminiResponse = parsedTransaction;
+        this.transaction = {
+          ...parsedTransaction,
+          observaciones: this.transaction.observaciones || ''
+        };
+        this.onCategoriaChange();
+        this.isProcessing = false;
+      },
+      error: (error: any) => {
+        this.isProcessing = false;
+      }
+    });
+  }
+
+  clearTranscript() {
+    // Detener reconocimiento si está activo
+    if (this.isRecording) {
+      this.speechService.stop();
+    }
+    
+    this.capturedTranscript = '';
+    this.geminiResponse = null;
+    this.showJsonResponse = false;
+    this.canEdit = false;
+    this.isRecording = false;
+    this.isProcessing = false;
+    this.clearMessage();
+  }
+
+  toggleJsonView() {
+    this.showJsonResponse = !this.showJsonResponse;
+  }
+
   onSubmit() {
     if (!this.isFormValid()) {
-      this.showMessage('Por favor completa todos los campos requeridos', 'error');
       return;
     }
 
@@ -146,36 +216,35 @@ export class TransactionFormComponent implements OnInit {
     this.transactionService.create(this.transaction).subscribe({
       next: (response) => {
         this.isProcessing = false;
-        this.showMessage('¡Transacción guardada exitosamente!', 'success');
         this.resetForm();
+        this.clearTranscript();
       },
       error: (error) => {
         this.isProcessing = false;
-        this.showMessage('Error al guardar: ' + error.message, 'error');
       }
     });
   }
 
-  downloadBackup() {
+  confirmAITransaction() {
+    if (!this.isFormValid()) {
+      return;
+    }
+
     this.isProcessing = true;
-    this.transactionService.exportSql().subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `gestapp_backup_${new Date().toISOString().split('T')[0]}.sql`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+    this.transactionService.create(this.transaction).subscribe({
+      next: (response) => {
         this.isProcessing = false;
-        this.showMessage('Backup descargado exitosamente', 'success');
+        this.resetForm();
+        this.clearTranscript();
       },
       error: (error) => {
         this.isProcessing = false;
-        this.showMessage('Error al descargar backup: ' + error.message, 'error');
       }
     });
+  }
+
+  cancelAITransaction() {
+    this.clearTranscript();
   }
 
   isFormValid(): boolean {

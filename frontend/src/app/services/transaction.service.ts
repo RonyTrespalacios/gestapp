@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface Transaction {
-  id?: string;
+  id?: number;
   categoria: string;
   descripcion: string;
   tipo: string;
@@ -39,13 +39,17 @@ export class TransactionService {
     return this.http.patch<Transaction>(`${this.apiUrl}/${id}`, transaction);
   }
 
-  delete(id: string): Observable<void> {
+  delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  exportSql(): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/export/sql`, {
+  exportCsv(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/export/csv`, {
       responseType: 'blob'
     });
+  }
+
+  importCsv(formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/import/csv`, formData);
   }
 }
