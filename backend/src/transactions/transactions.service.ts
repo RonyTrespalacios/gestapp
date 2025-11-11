@@ -56,6 +56,13 @@ export class TransactionsService {
   async remove(id: number): Promise<void> {
     const transaction = await this.findOne(id);
     await this.transactionRepository.remove(transaction);
+
+    // Si quedó vacío, reiniciar el autoincremental a 1
+    const total = await this.transactionRepository.count();
+    if (total === 0) {
+      // Nombre por defecto del sequence en Postgres para la tabla 'transactions'
+      await this.transactionRepository.query('ALTER SEQUENCE "transactions_id_seq" RESTART WITH 1');
+    }
   }
 
   async exportToCsv(): Promise<string> {

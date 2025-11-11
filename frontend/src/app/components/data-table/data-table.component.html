@@ -20,29 +20,50 @@
   </app-modal>
 
   <div class="header-section">
-    <h2>Base de Datos</h2>
+    <h2>Historial financiero</h2>
     
     <div class="actions">
-      <button (click)="downloadCSV()" class="btn btn-download">
-        Descargar CSV
-      </button>
+      <div class="download-section">
+        <select [(ngModel)]="exportFormat" class="format-select">
+          <option value="csv">CSV</option>
+          <option value="xlsx">XLSX</option>
+        </select>
+        <button (click)="downloadData()" class="btn btn-download">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Descargar historial</span>
+        </button>
+      </div>
       
       <div class="upload-section">
         <input 
           type="file" 
-          accept=".csv"
+          accept=".csv,.xlsx"
           (change)="onFileSelected($event)"
           id="csvFile"
           class="file-input">
         <label for="csvFile" class="btn btn-secondary">
-          Seleccionar CSV
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25" />
+            <polyline points="16 16 12 12 8 16" />
+            <line x1="12" y1="12" x2="12" y2="21" />
+          </svg>
+          <span>Subir historial</span>
         </label>
         <button 
           *ngIf="selectedFile"
           (click)="uploadCSV()" 
           class="btn btn-upload"
           [disabled]="isLoading">
-          Importar
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 14 12 9 17 14" />
+            <line x1="12" y1="9" x2="12" y2="21" />
+          </svg>
+          <span>Importar</span>
         </button>
       </div>
     </div>
@@ -52,26 +73,26 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>Fecha</th>
+          <th class="col-fecha">Fecha</th>
           <th>Categoria</th>
-          <th>Descripcion</th>
+          <th class="col-descripcion">Descripcion</th>
           <th>Tipo</th>
           <th>Monto</th>
           <th>Medio</th>
-          <th>Observaciones</th>
+          <th class="col-observaciones">Observaciones</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let transaction of transactions">
-          <td>{{ transaction.fecha }}</td>
-          <td>{{ transaction.categoria }}</td>
-          <td>{{ transaction.descripcion }}</td>
-          <td>{{ transaction.tipo }}</td>
-          <td>${{ transaction.monto | number:'1.0-0' }}</td>
-          <td>{{ transaction.medio }}</td>
-          <td>{{ transaction.observaciones || '-' }}</td>
-          <td>
+          <td class="col-fecha" [attr.data-label]="'Fecha'">{{ transaction.fecha }}</td>
+          <td [attr.data-label]="'Categoria'">{{ transaction.categoria }}</td>
+          <td class="col-descripcion" [attr.data-label]="'Descripcion'">{{ transaction.descripcion }}</td>
+          <td [attr.data-label]="'Tipo'">{{ transaction.tipo }}</td>
+          <td [attr.data-label]="'Monto'">${{ transaction.monto | number:'1.0-0' }}</td>
+          <td [attr.data-label]="'Medio'">{{ transaction.medio }}</td>
+          <td class="col-observaciones" [attr.data-label]="'Observaciones'">{{ transaction.observaciones || '-' }}</td>
+          <td [attr.data-label]="'Acciones'">
             <button 
               (click)="deleteTransaction(transaction.id!)" 
               class="btn btn-delete">
