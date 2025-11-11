@@ -11,8 +11,8 @@ Sistema completo de gestión de gastos personales con autenticación, IA (Gemini
 - ✅ Endpoints protegidos por autenticación
 - ✅ Aislamiento total de datos por usuario
 - ✅ Protección contra inyección SQL (TypeORM)
-- ✅ HTTPS con certificados SSL
-- ✅ Headers de seguridad (HSTS, XSS, etc.)
+- ✅ Listo para HTTPS con Cloudflare (SSL automático)
+- ✅ Headers de seguridad configurados
 
 ### Funcionalidades
 - ✅ Registro manual de transacciones
@@ -65,7 +65,7 @@ cp .env.example .env
 docker compose up -d --build
 
 # 4. Acceder a la aplicación
-# Frontend: https://localhost (acepta el certificado autofirmado)
+# Frontend: http://localhost
 # Backend API: http://localhost:3000
 ```
 
@@ -84,7 +84,7 @@ npm run dev
 ## 📖 Uso
 
 ### 1. Registro de Usuario
-1. Ir a https://localhost
+1. Ir a http://localhost
 2. Click en "Registro" en el sidebar
 3. Completar formulario (email, contraseña, nombre opcional)
 4. Verificar email (en desarrollo, el link se muestra en los logs del backend)
@@ -105,9 +105,13 @@ npm run dev
 
 ## 🔒 Seguridad
 
-### Certificados SSL
-- En desarrollo: Certificados autofirmados generados automáticamente
-- En producción: Usar Let's Encrypt o certificados válidos
+### HTTPS en Producción
+- **Desarrollo**: HTTP simple en localhost
+- **Producción**: Usar Cloudflare (SSL automático y gratuito)
+  - Cloudflare maneja todos los certificados SSL
+  - Tus usuarios siempre verán 🔒 candado verde
+  - Sin configuración adicional necesaria
+  - Se renueva automáticamente
 
 ### Email de Verificación
 - Si no configuras EMAIL_USER/EMAIL_PASS, los links aparecen en los logs
@@ -164,11 +168,6 @@ docker compose down -v
   docker compose logs backend | grep "Verification URL"
   ```
 
-### Certificado SSL no confiable
-- Es normal en desarrollo
-- En Chrome: Click en "Avanzado" > "Continuar de todos modos"
-- En Firefox: "Avanzado" > "Aceptar el riesgo"
-
 ## 📝 Notas de Desarrollo
 
 - **TypeORM** previene inyección SQL automáticamente
@@ -179,15 +178,33 @@ docker compose down -v
 
 ## 🚀 Producción
 
-Para desplegar en producción:
+### Deployment Rápido con Cloudflare (Recomendado):
 
-1. Cambiar `JWT_SECRET` a un valor seguro
-2. Usar certificados SSL válidos (Let's Encrypt)
-3. Configurar SMTP real para emails
-4. Cambiar `synchronize: false` en TypeORM
-5. Usar migraciones para la base de datos
-6. Configurar variables de entorno seguras
-7. Usar PostgreSQL en servidor separado
+1. **Comprar dominio** (~$12/año en Namecheap/GoDaddy)
+2. **Configurar Cloudflare** (gratis):
+   - Crear cuenta en cloudflare.com
+   - Agregar tu dominio
+   - Cambiar nameservers a Cloudflare
+   - Configurar DNS:
+     ```
+     Tipo: A
+     Nombre: @
+     Valor: IP_de_tu_servidor
+     Proxy: ✅ Activado (naranja)
+     ```
+   - SSL/TLS → Seleccionar "Flexible"
+3. **Desplegar app**:
+   ```bash
+   docker compose up -d
+   ```
+4. **Configurar variables de entorno seguras**:
+   - Cambiar `JWT_SECRET` a un valor seguro
+   - Configurar SMTP real para emails
+   - Usar `synchronize: false` en TypeORM
+   - Configurar migraciones
+5. **¡Listo!** - Tus usuarios verán 🔒 candado verde
+
+### Tiempo Total: ~30 minutos | Costo: ~$12/año (solo el dominio)
 
 ## 📄 Licencia
 
