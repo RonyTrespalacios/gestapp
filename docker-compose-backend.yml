@@ -30,12 +30,12 @@ services:
       DATABASE_PASSWORD: gestapp_password
       DATABASE_NAME: gestapp
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      JWT_SECRET: ${JWT_SECRET}
       EMAIL_USER: ${EMAIL_USER:-}
       EMAIL_PASS: ${EMAIL_PASS:-}
       EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
       EMAIL_PORT: ${EMAIL_PORT:-587}
-      FRONTEND_URL: http://localhost
+      FRONTEND_URL: ${FRONTEND_URL}
       PORT: 3000
       NODE_ENV: production
     ports:
