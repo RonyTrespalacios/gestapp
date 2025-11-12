@@ -8,7 +8,7 @@
 ### Paso 1: Clonar el repositorio
 
 ```bash
-git clone <url-del-repositorio>
+git clone https://github.com/RonyTrespalacios/gestapp.git
 cd gestapp
 ```
 
@@ -138,7 +138,7 @@ Reemplaza `tu_api_key_aqui` y `tu_jwt_secret_aqui` con los valores reales que ob
 
 #### Configurar envío de correos con Gmail (Opcional)
 
-Si quieres que los correos de verificación se envíen automáticamente, configura las credenciales de Gmail:
+Si quieres que los correos de verificación se envíen automáticamente, configura las credenciales de Gmail. **Nota importante**: Si configuras el correo, también debes configurar `FRONTEND_URL` para que los enlaces de verificación funcionen correctamente.
 
 **Paso 1: Obtener App Password de Gmail**
 
@@ -173,32 +173,14 @@ FRONTEND_URL=http://localhost:4200
 EOF
 ```
 
-**Notas:**
-- `EMAIL_HOST` y `EMAIL_PORT` tienen valores por defecto (`smtp.gmail.com` y `587`), pero es recomendable configurarlos explícitamente.
-- `FRONTEND_URL` debe apuntar a la URL donde está corriendo tu frontend. Si usas el frontend local en desarrollo, usa `http://localhost:4200`. Si usas Docker completo, usa `http://localhost`.
-- Si no configuras el correo, los tokens de verificación se mostrarán en los logs del backend (ver sección de logs más abajo).
+**Explicación de las variables:**
+- `EMAIL_USER`: Tu dirección de correo de Gmail
+- `EMAIL_PASS`: La App Password de 16 caracteres generada
+- `EMAIL_HOST`: Servidor SMTP (por defecto `smtp.gmail.com`, pero se recomienda configurarlo explícitamente)
+- `EMAIL_PORT`: Puerto SMTP (por defecto `587`, pero se recomienda configurarlo explícitamente)
+- `FRONTEND_URL`: **Requerido si configuras correo**. Debe ser la URL donde está corriendo tu frontend. Para frontend local usa `http://localhost:4200`
 
-#### Ver tokens de verificación en desarrollo (sin correo configurado)
-
-Si no configuraste el envío de correos, los tokens de verificación se mostrarán en los logs del backend. Para verlos:
-
-**Si usas Docker:**
-
-Ver solo logs de verificación de emails:
-
-```bash
-docker compose -f docker-compose-backend.yml logs -f backend | grep -E "DEV MODE|Verification URL"
-```
-
-O ver todos los logs del backend:
-
-```bash
-docker compose -f docker-compose-backend.yml logs -f backend
-```
-
-**Si desarrollas localmente sin Docker:**
-
-Los logs aparecerán directamente en la terminal donde ejecutaste `npm run start:dev` en el backend. Busca líneas que digan `[DEV MODE] Verification email for` y `Verification URL:` para ver el token completo.
+**Si no configuras el correo**: Los tokens de verificación se mostrarán en los logs del backend. Verás cómo acceder a ellos después de desplegar el frontend (Paso 6).
 
 ### Paso 4: Levantar el Backend con Docker
 
@@ -295,7 +277,31 @@ cd dist/gestapp-frontend
 python3 -m http.server 4200
 ```
 
-### Paso 6: Detener los contenedores de Docker
+### Paso 6: Ver tokens de verificación (si no configuraste correo)
+
+Si no configuraste el envío de correos, los tokens de verificación se mostrarán en los logs del backend. Para verlos:
+
+**Si usas Docker:**
+
+Ver solo logs de verificación de emails:
+
+```bash
+docker compose -f docker-compose-backend.yml logs -f backend | grep -E "DEV MODE|Verification URL"
+```
+
+O ver todos los logs del backend:
+
+```bash
+docker compose -f docker-compose-backend.yml logs -f backend
+```
+
+Busca líneas que digan `[DEV MODE] Verification email for` y `Verification URL:` para ver el token completo y la URL de verificación.
+
+**Si desarrollas localmente sin Docker:**
+
+Los logs aparecerán directamente en la terminal donde ejecutaste `npm run start:dev` en el backend. Busca líneas que digan `[DEV MODE] Verification email for` y `Verification URL:` para ver el token completo.
+
+### Paso 7: Detener los contenedores de Docker
 
 Detener y eliminar contenedores:
 
@@ -308,6 +314,8 @@ O solo detener (sin eliminar):
 ```bash
 docker compose -f docker-compose-backend.yml stop
 ```
+
+**Nota**: Recuerda también detener el frontend si lo tienes corriendo localmente (presiona `Ctrl + C` en la terminal donde está corriendo, o usa los comandos de detención según la opción que elegiste).
 
 </details>
 
@@ -380,7 +388,7 @@ Reemplaza `tu_api_key_aqui` y `tu_jwt_secret_aqui` con los valores reales que ob
 
 #### Configurar envío de correos con Gmail (Opcional)
 
-Si quieres que los correos de verificación se envíen automáticamente, configura las credenciales de Gmail:
+Si quieres que los correos de verificación se envíen automáticamente, configura las credenciales de Gmail. **Nota importante**: Si configuras el correo, también debes configurar `FRONTEND_URL` para que los enlaces de verificación funcionen correctamente.
 
 **Paso 1: Obtener App Password de Gmail**
 
@@ -415,12 +423,29 @@ FRONTEND_URL=http://localhost
 EOF
 ```
 
-**Notas:**
-- `EMAIL_HOST` y `EMAIL_PORT` tienen valores por defecto (`smtp.gmail.com` y `587`), pero es recomendable configurarlos explícitamente.
-- `FRONTEND_URL` debe apuntar a la URL donde está corriendo tu frontend. En despliegue completo con Docker, usa `http://localhost`.
-- Si no configuras el correo, los tokens de verificación se mostrarán en los logs del backend (ver sección de logs más abajo).
+**Explicación de las variables:**
+- `EMAIL_USER`: Tu dirección de correo de Gmail
+- `EMAIL_PASS`: La App Password de 16 caracteres generada
+- `EMAIL_HOST`: Servidor SMTP (por defecto `smtp.gmail.com`, pero se recomienda configurarlo explícitamente)
+- `EMAIL_PORT`: Puerto SMTP (por defecto `587`, pero se recomienda configurarlo explícitamente)
+- `FRONTEND_URL`: **Requerido si configuras correo**. Debe ser la URL donde está corriendo tu frontend. En despliegue completo con Docker, usa `http://localhost`
 
-#### Ver tokens de verificación en desarrollo (sin correo configurado)
+**Si no configuras el correo**: Los tokens de verificación se mostrarán en los logs del backend. Verás cómo acceder a ellos después de levantar los servicios (Paso 4).
+
+### Paso 3: Levantar todos los servicios
+
+En la raíz del proyecto:
+
+```bash
+docker compose up -d --build
+```
+
+Esto levantará:
+- **PostgreSQL** en el puerto `5432`
+- **Backend** en `http://localhost:3000/api`
+- **Frontend** en `http://localhost`
+
+### Paso 4: Ver tokens de verificación (si no configuraste correo)
 
 Si no configuraste el envío de correos, los tokens de verificación se mostrarán en los logs del backend. Para verlos:
 
@@ -438,24 +463,13 @@ O ver todos los logs del backend:
 docker compose logs -f backend
 ```
 
+Busca líneas que digan `[DEV MODE] Verification email for` y `Verification URL:` para ver el token completo y la URL de verificación.
+
 **Si desarrollas localmente sin Docker:**
 
 Los logs aparecerán directamente en la terminal donde ejecutaste `npm run start:dev` en el backend. Busca líneas que digan `[DEV MODE] Verification email for` y `Verification URL:` para ver el token completo.
 
-### Paso 3: Levantar todos los servicios
-
-En la raíz del proyecto:
-
-```bash
-docker compose up -d --build
-```
-
-Esto levantará:
-- **PostgreSQL** en el puerto `5432`
-- **Backend** en `http://localhost:3000/api`
-- **Frontend** en `http://localhost`
-
-### Paso 4: Detener los contenedores
+### Paso 5: Detener los contenedores
 
 Detener y eliminar contenedores:
 
@@ -468,6 +482,8 @@ O solo detener (sin eliminar):
 ```bash
 docker compose stop
 ```
+
+**Nota**: Esto detendrá todos los servicios (PostgreSQL, Backend y Frontend).
 
 </details>
 
