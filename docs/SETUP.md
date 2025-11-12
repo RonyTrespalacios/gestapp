@@ -116,29 +116,43 @@ Puedes usar cualquier cadena de texto aleatoria y segura (mínimo 32 caracteres)
 
 #### Crear el archivo `.env`
 
-Una vez que tengas ambos valores, crea el archivo `.env` en la raíz del proyecto:
+**⚠️ IMPORTANTE**: Todas las variables marcadas como obligatorias deben estar configuradas en el archivo `.env` o el backend no funcionará correctamente.
+
+Copia el archivo de ejemplo y completa los valores:
 
 **Windows (PowerShell):**
 
-```bash
-echo "GEMINI_API_KEY=tu_api_key_aqui" > .env
-echo "JWT_SECRET=tu_jwt_secret_aqui" >> .env
+```powershell
+Copy-Item .env.example .env
 ```
 
 **Ubuntu/Linux:**
 
 ```bash
-cat > .env << EOF
-GEMINI_API_KEY=tu_api_key_aqui
-JWT_SECRET=tu_jwt_secret_aqui
-EOF
+cp .env.example .env
 ```
 
-Reemplaza `tu_api_key_aqui` y `tu_jwt_secret_aqui` con los valores reales que obtuviste.
+Luego edita el archivo `.env` y completa los valores obligatorios:
+
+1. **`GEMINI_API_KEY`**: Tu API key de Google Gemini (obligatorio)
+2. **`JWT_SECRET`**: Secreto para firmar tokens JWT (obligatorio)
+3. **`FRONTEND_URL`**: URL del frontend (obligatorio)
+   - Si el frontend está en desarrollo local: `http://localhost:4200`
+   - Si todo está en Docker: `http://localhost`
+
+**Ejemplo de archivo `.env` mínimo:**
+
+```env
+GEMINI_API_KEY=tu_api_key_aqui
+JWT_SECRET=tu_jwt_secret_aqui
+FRONTEND_URL=http://localhost:4200
+```
+
+**Nota sobre `FRONTEND_URL`**: Esta variable es **obligatoria** y debe coincidir con la URL donde está corriendo tu frontend. Si no la configuras correctamente, los enlaces de verificación de email no funcionarán.
 
 #### Configurar envío de correos con Gmail (Opcional)
 
-Si quieres que los correos de verificación se envíen automáticamente, configura las credenciales de Gmail. **Nota importante**: Si configuras el correo, también debes configurar `FRONTEND_URL` para que los enlaces de verificación funcionen correctamente.
+Si quieres que los correos de verificación se envíen automáticamente, configura las credenciales de Gmail. **Nota**: La variable `FRONTEND_URL` ya debe estar configurada en el paso anterior para que los enlaces de verificación funcionen correctamente.
 
 **Paso 1: Obtener App Password de Gmail**
 
@@ -151,34 +165,23 @@ Si quieres que los correos de verificación se envíen automáticamente, configu
 
 **Paso 2: Agregar credenciales al archivo `.env`**
 
-**Windows (PowerShell):**
+Edita el archivo `.env` y agrega las siguientes variables (o descomenta si ya están en el archivo):
 
-```bash
-echo "EMAIL_USER=tu_email@gmail.com" >> .env
-echo "EMAIL_PASS=tu_app_password_de_16_caracteres" >> .env
-echo "EMAIL_HOST=smtp.gmail.com" >> .env
-echo "EMAIL_PORT=587" >> .env
-echo "FRONTEND_URL=http://localhost:4200" >> .env
-```
-
-**Ubuntu/Linux:**
-
-```bash
-cat >> .env << EOF
+```env
 EMAIL_USER=tu_email@gmail.com
 EMAIL_PASS=tu_app_password_de_16_caracteres
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
-FRONTEND_URL=http://localhost:4200
-EOF
 ```
+
+**Nota**: No necesitas agregar `FRONTEND_URL` de nuevo si ya la configuraste en el paso anterior. Si no la configuraste, asegúrate de agregarla ahora.
 
 **Explicación de las variables:**
 - `EMAIL_USER`: Tu dirección de correo de Gmail
 - `EMAIL_PASS`: La App Password de 16 caracteres generada
 - `EMAIL_HOST`: Servidor SMTP (por defecto `smtp.gmail.com`, pero se recomienda configurarlo explícitamente)
 - `EMAIL_PORT`: Puerto SMTP (por defecto `587`, pero se recomienda configurarlo explícitamente)
-- `FRONTEND_URL`: **Requerido si configuras correo**. Debe ser la URL donde está corriendo tu frontend. Para frontend local usa `http://localhost:4200`
+- `FRONTEND_URL`: Ya configurada en el paso anterior (obligatoria). Debe ser la URL donde está corriendo tu frontend. Para frontend local usa `http://localhost:4200`
 
 **Si no configuras el correo**: Los tokens de verificación se mostrarán en los logs del backend. Verás cómo acceder a ellos después de desplegar el frontend (Paso 6).
 
@@ -285,14 +288,20 @@ Si no configuraste el envío de correos, los tokens de verificación se mostrar�
 
 Ver solo logs de verificación de emails:
 
+**Windows (PowerShell):**
+```powershell
+docker logs -f gestapp-backend | Select-String -Pattern "DEV MODE|Verification URL"
+```
+
+**Linux/Ubuntu:**
 ```bash
-docker compose -f docker-compose-backend.yml logs -f backend | grep -E "DEV MODE|Verification URL"
+docker logs -f gestapp-backend | grep -E "DEV MODE|Verification URL"
 ```
 
 O ver todos los logs del backend:
 
 ```bash
-docker compose -f docker-compose-backend.yml logs -f backend
+docker logs -f gestapp-backend
 ```
 
 Busca líneas que digan `[DEV MODE] Verification email for` y `Verification URL:` para ver el token completo y la URL de verificación.
@@ -366,29 +375,42 @@ Puedes usar cualquier cadena de texto aleatoria y segura (mínimo 32 caracteres)
 
 #### Crear el archivo `.env`
 
-Una vez que tengas ambos valores, crea el archivo `.env` en la raíz del proyecto:
+**⚠️ IMPORTANTE**: Todas las variables marcadas como obligatorias deben estar configuradas en el archivo `.env` o el backend no funcionará correctamente.
+
+Copia el archivo de ejemplo y completa los valores:
 
 **Windows (PowerShell):**
 
-```bash
-echo "GEMINI_API_KEY=tu_api_key_aqui" > .env
-echo "JWT_SECRET=tu_jwt_secret_aqui" >> .env
+```powershell
+Copy-Item .env.example .env
 ```
 
 **Ubuntu/Linux:**
 
 ```bash
-cat > .env << EOF
-GEMINI_API_KEY=tu_api_key_aqui
-JWT_SECRET=tu_jwt_secret_aqui
-EOF
+cp .env.example .env
 ```
 
-Reemplaza `tu_api_key_aqui` y `tu_jwt_secret_aqui` con los valores reales que obtuviste.
+Luego edita el archivo `.env` y completa los valores obligatorios:
+
+1. **`GEMINI_API_KEY`**: Tu API key de Google Gemini (obligatorio)
+2. **`JWT_SECRET`**: Secreto para firmar tokens JWT (obligatorio)
+3. **`FRONTEND_URL`**: URL del frontend (obligatorio)
+   - En despliegue completo con Docker: `http://localhost` (nginx hace proxy en el puerto 80)
+
+**Ejemplo de archivo `.env` mínimo:**
+
+```env
+GEMINI_API_KEY=tu_api_key_aqui
+JWT_SECRET=tu_jwt_secret_aqui
+FRONTEND_URL=http://localhost
+```
+
+**Nota sobre `FRONTEND_URL`**: Esta variable es **obligatoria** y debe coincidir con la URL donde está corriendo tu frontend. Si no la configuras correctamente, los enlaces de verificación de email no funcionarán.
 
 #### Configurar envío de correos con Gmail (Opcional)
 
-Si quieres que los correos de verificación se envíen automáticamente, configura las credenciales de Gmail. **Nota importante**: Si configuras el correo, también debes configurar `FRONTEND_URL` para que los enlaces de verificación funcionen correctamente.
+Si quieres que los correos de verificación se envíen automáticamente, configura las credenciales de Gmail. **Nota**: La variable `FRONTEND_URL` ya debe estar configurada en el paso anterior para que los enlaces de verificación funcionen correctamente.
 
 **Paso 1: Obtener App Password de Gmail**
 
@@ -401,34 +423,23 @@ Si quieres que los correos de verificación se envíen automáticamente, configu
 
 **Paso 2: Agregar credenciales al archivo `.env`**
 
-**Windows (PowerShell):**
+Edita el archivo `.env` y agrega las siguientes variables (o descomenta si ya están en el archivo):
 
-```bash
-echo "EMAIL_USER=tu_email@gmail.com" >> .env
-echo "EMAIL_PASS=tu_app_password_de_16_caracteres" >> .env
-echo "EMAIL_HOST=smtp.gmail.com" >> .env
-echo "EMAIL_PORT=587" >> .env
-echo "FRONTEND_URL=http://localhost" >> .env
-```
-
-**Ubuntu/Linux:**
-
-```bash
-cat >> .env << EOF
+```env
 EMAIL_USER=tu_email@gmail.com
 EMAIL_PASS=tu_app_password_de_16_caracteres
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
-FRONTEND_URL=http://localhost
-EOF
 ```
+
+**Nota**: No necesitas agregar `FRONTEND_URL` de nuevo si ya la configuraste en el paso anterior. Si no la configuraste, asegúrate de agregarla ahora.
 
 **Explicación de las variables:**
 - `EMAIL_USER`: Tu dirección de correo de Gmail
 - `EMAIL_PASS`: La App Password de 16 caracteres generada
 - `EMAIL_HOST`: Servidor SMTP (por defecto `smtp.gmail.com`, pero se recomienda configurarlo explícitamente)
 - `EMAIL_PORT`: Puerto SMTP (por defecto `587`, pero se recomienda configurarlo explícitamente)
-- `FRONTEND_URL`: **Requerido si configuras correo**. Debe ser la URL donde está corriendo tu frontend. En despliegue completo con Docker, usa `http://localhost`
+- `FRONTEND_URL`: Ya configurada en el paso anterior (obligatoria). Debe ser la URL donde está corriendo tu frontend. En despliegue completo con Docker, usa `http://localhost`
 
 **Si no configuras el correo**: Los tokens de verificación se mostrarán en los logs del backend. Verás cómo acceder a ellos después de levantar los servicios (Paso 4).
 
@@ -453,14 +464,20 @@ Si no configuraste el envío de correos, los tokens de verificación se mostrar�
 
 Ver solo logs de verificación de emails:
 
+**Windows (PowerShell):**
+```powershell
+docker logs -f gestapp-backend | Select-String -Pattern "DEV MODE|Verification URL"
+```
+
+**Linux/Ubuntu:**
 ```bash
-docker compose logs -f backend | grep -E "DEV MODE|Verification URL"
+docker logs -f gestapp-backend | grep -E "DEV MODE|Verification URL"
 ```
 
 O ver todos los logs del backend:
 
 ```bash
-docker compose logs -f backend
+docker logs -f gestapp-backend
 ```
 
 Busca líneas que digan `[DEV MODE] Verification email for` y `Verification URL:` para ver el token completo y la URL de verificación.
