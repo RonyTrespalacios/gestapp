@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: gestapp-db
+    environment:
+      POSTGRES_DB: gestapp
+      POSTGRES_USER: gestapp_user
+      POSTGRES_PASSWORD: gestapp_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - gestapp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gestapp_user -d gestapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gestapp-backend
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: gestapp_user
+      DATABASE_PASSWORD: gestapp_password
+      DATABASE_NAME: gestapp
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      FRONTEND_URL: http://localhost
+      PORT: 3000
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gestapp-network
+    restart: unless-stopped
+
+networks:
+  gestapp-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
