@@ -5,6 +5,13 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ModalComponent } from '../modal/modal.component';
 
+interface PasswordValidation {
+  minLength: boolean;
+  hasUpperCase: boolean;
+  hasLowerCase: boolean;
+  hasNumber: boolean;
+}
+
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -22,20 +29,60 @@ export class RegisterComponent {
   modalTitle = '';
   modalMessage = '';
   modalType: 'success' | 'error' | 'info' = 'info';
+  
+  passwordValidation: PasswordValidation = {
+    minLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false
+  };
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) {}
 
+  validatePassword() {
+    this.passwordValidation = {
+      minLength: this.password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(this.password),
+      hasLowerCase: /[a-z]/.test(this.password),
+      hasNumber: /[0-9]/.test(this.password)
+    };
+  }
+
+  get isPasswordValid(): boolean {
+    return Object.values(this.passwordValidation).every(v => v === true);
+  }
+
+  validateEmail(): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(this.email);
+  }
+
   onSubmit() {
-    if (!this.email || !this.password) {
-      this.showModalMessage('Error', 'Por favor completa todos los campos obligatorios', 'error');
+    if (!this.name || !this.name.trim()) {
+      this.showModalMessage('Error', 'El nombre es obligatorio', 'error');
       return;
     }
 
-    if (this.password.length < 6) {
-      this.showModalMessage('Error', 'La contraseña debe tener al menos 6 caracteres', 'error');
+    if (!this.email || !this.email.trim()) {
+      this.showModalMessage('Error', 'El correo electrónico es obligatorio', 'error');
+      return;
+    }
+
+    if (!this.validateEmail()) {
+      this.showModalMessage('Error', 'Por favor ingresa un correo electrónico válido', 'error');
+      return;
+    }
+
+    if (!this.password) {
+      this.showModalMessage('Error', 'La contraseña es obligatoria', 'error');
+      return;
+    }
+
+    if (!this.isPasswordValid) {
+      this.showModalMessage('Error', 'La contraseña no cumple con los requisitos de seguridad', 'error');
       return;
     }
 
@@ -45,7 +92,7 @@ export class RegisterComponent {
     }
 
     this.isLoading = true;
-    this.authService.register(this.email, this.password, this.name || undefined).subscribe({
+    this.authService.register(this.email, this.password, this.name.trim()).subscribe({
       next: (response) => {
         this.showModalMessage(
           'Éxito', 

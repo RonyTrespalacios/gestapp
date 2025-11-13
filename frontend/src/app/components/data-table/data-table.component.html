@@ -28,7 +28,15 @@
   </app-file-upload-modal>
 
   <div class="header-section">
-    <h2>Historial financiero</h2>
+    <div class="header-top">
+      <h2>Historial financiero</h2>
+      <div class="kpi-cash-flow" *ngIf="!isLoading && allTransactions.length > 0">
+        <div class="kpi-label">Flujo de Caja</div>
+        <div class="kpi-value" [class.positive]="cashFlow >= 0" [class.negative]="cashFlow < 0">
+          {{ formattedCashFlow }}
+        </div>
+      </div>
+    </div>
     
     <div class="actions">
       <div class="download-section">

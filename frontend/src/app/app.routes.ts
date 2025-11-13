@@ -42,5 +42,10 @@ export const routes: Routes = [
     canActivate: [authGuard],
     runGuardsAndResolvers: 'always'
   },
+  {
+    path: 'liquidez',
+    loadComponent: () => import('./components/liquidity/liquidity.component').then(m => m.LiquidityComponent),
+    canActivate: [authGuard]
+  },
   { path: '**', redirectTo: '/home' }
 ];

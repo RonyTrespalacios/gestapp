@@ -1,6 +1,10 @@
 <div class="home">
+  <!-- AI Chat Widget (solo si está autenticado) -->
+  <app-ai-chat-widget *ngIf="authService.isAuthenticated"></app-ai-chat-widget>
+
   <section class="hero">
-    <h1>GestApp</h1>
+    <h1 *ngIf="!authService.isAuthenticated || !hasName">GestApp</h1>
+    <h1 *ngIf="authService.isAuthenticated && hasName">Hola, {{ firstName }}</h1>
     <p class="subtitle">Registra, entiende y mejora tus finanzas personales</p>
     <p class="value">
       La información es oro: mientras mejor registres hoy, mejores decisiones podrás tomar mañana.

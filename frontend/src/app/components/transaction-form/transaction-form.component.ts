@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, ViewChild, ElementRef, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, ViewChild, ElementRef, NgZone, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, NavigationEnd } from '@angular/router';
@@ -71,7 +71,26 @@ export class TransactionFormComponent implements OnInit, OnDestroy {
     private router: Router,
     private transactionStateService: TransactionStateService,
     private ngZone: NgZone
-  ) {}
+  ) {
+    // Observar cambios en el signal de transacción para editar
+    // Esto permite que el formulario se actualice automáticamente cuando
+    // el widget de chat guarda una nueva transacción, incluso si ya estamos en esta ruta
+    effect(() => {
+      const transactionToEdit = this.transactionStateService.transactionToEdit$();
+      // Solo cargar si hay una transacción y estamos en modo manual
+      // El effect se ejecuta después de ngOnInit, así que isManualMode ya debería estar establecido
+      if (transactionToEdit) {
+        console.log('🔄 Signal detectado: nueva transacción para editar', transactionToEdit);
+        // Usar setTimeout para asegurar que se ejecute después del ciclo actual
+        // y que isManualMode ya esté establecido
+        setTimeout(() => {
+          if (this.isManualMode) {
+            this.loadPendingTransaction();
+          }
+        }, 100);
+      }
+    });
+  }
 
   ngOnInit() {
     console.log('🔄 ngOnInit ejecutado, forceManualMode:', this.forceManualMode);

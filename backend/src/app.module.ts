@@ -5,6 +5,7 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { GeminiModule } from './gemini/gemini.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { LiquidityModule } from './liquidity/liquidity.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AuthModule } from './auth/auth.module';
     AuthModule,
     TransactionsModule,
     GeminiModule,
+    LiquidityModule,
   ],
 })
 export class AppModule {}

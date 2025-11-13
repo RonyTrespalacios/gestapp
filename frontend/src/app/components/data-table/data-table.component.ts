@@ -503,6 +503,36 @@ export class DataTableComponent implements OnInit, AfterViewInit, OnDestroy {
 
     return `$ ${this.numberFormatter.format(numericValue as number)}`;
   }
+
+  /**
+   * Calcula el flujo de caja sumando todos los valores de las transacciones
+   * Los valores ya tienen en cuenta si es ingreso (positivo) o egreso (negativo)
+   */
+  get cashFlow(): number {
+    if (!this.allTransactions || this.allTransactions.length === 0) {
+      return 0;
+    }
+    
+    return this.allTransactions.reduce((sum, transaction) => {
+      const valor = typeof transaction.valor === 'string' 
+        ? Number(transaction.valor) 
+        : transaction.valor ?? 0;
+      
+      if (Number.isFinite(valor) && valor !== undefined && valor !== null) {
+        return sum + valor;
+      }
+      return sum;
+    }, 0);
+  }
+
+  /**
+   * Formatea el flujo de caja con el signo apropiado
+   */
+  get formattedCashFlow(): string {
+    const flow = this.cashFlow;
+    const formatted = this.formatAmount(Math.abs(flow));
+    return flow >= 0 ? `+${formatted}` : `-${formatted}`;
+  }
 }
 
 

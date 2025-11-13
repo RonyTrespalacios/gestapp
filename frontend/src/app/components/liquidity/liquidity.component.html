@@ -1,0 +1,117 @@
+<app-modal 
+  [title]="modalTitle"
+  [message]="modalMessage"
+  [type]="modalType"
+  [show]="showModal"
+  (close)="closeModal()">
+</app-modal>
+
+<div class="liquidity-container">
+  <div class="liquidity-header">
+    <h1>Activos disponibles</h1>
+  </div>
+
+  <!-- KPI de Liquidez Total -->
+  <div class="liquidity-kpi">
+      <div class="kpi-card">
+        <div class="kpi-label">Liquidez Total</div>
+        <div class="kpi-value">${{ formatNumber(totalLiquidity) }} <span class="currency-label-small">COP</span></div>
+      </div>
+  </div>
+
+  <!-- Tabla de Balances -->
+  <div class="balances-section">
+    <h2>Balances por Medio</h2>
+    <div class="table-container">
+      <table class="balances-table">
+        <thead>
+          <tr>
+            <th class="medio-header">Medio</th>
+            <th class="balance-header">Balance (COP)</th>
+            <th class="actions-header">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let balance of balances" [class.editing]="editingBalance[balance.medio] !== toNumber(balance.balance)">
+            <td class="medio-cell">{{ getMedioDisplayName(balance.medio) }}</td>
+            <td class="balance-cell">
+              <div class="balance-input-wrapper">
+                <span class="currency-symbol">$</span>
+                <input 
+                  type="number" 
+                  [(ngModel)]="editingBalance[balance.medio]"
+                  [value]="editingBalance[balance.medio] || 0"
+                  min="0"
+                  step="0.01"
+                  class="balance-input"
+                  [disabled]="isUpdating"
+                  (focus)="onBalanceFocus(balance.medio, $event)"
+                  (blur)="onBalanceBlur(balance.medio, $event)"
+                  #balanceInput>
+                <span class="currency-label">COP</span>
+              </div>
+            </td>
+            <td class="actions-cell">
+              <button 
+                class="btn-update"
+                (click)="updateBalance(balance.medio)"
+                [disabled]="isUpdating || editingBalance[balance.medio] === toNumber(balance.balance)">
+                {{ isUpdating ? 'Guardando...' : 'Actualizar' }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Historial -->
+  <div class="history-section">
+    <div class="history-header">
+      <h2>Historial de Cambios</h2>
+      <button class="btn-toggle" (click)="toggleHistory()">
+        {{ showHistory ? 'Ocultar' : 'Mostrar' }} Historial
+      </button>
+    </div>
+
+    <div *ngIf="showHistory" class="history-content">
+      <div class="date-filter">
+        <label for="historyDate">Filtrar por fecha:</label>
+        <input 
+          type="date" 
+          id="historyDate"
+          [(ngModel)]="selectedDate"
+          (change)="onDateChange()">
+        <button class="btn-clear" (click)="selectedDate = ''; onDateChange()" *ngIf="selectedDate">
+          Limpiar filtro
+        </button>
+      </div>
+
+      <div *ngIf="historyLoading" class="loading">Cargando historial...</div>
+      
+      <div *ngIf="!historyLoading && history.length === 0" class="no-history">
+        No hay registros en el historial
+      </div>
+
+      <div *ngIf="!historyLoading && history.length > 0" class="history-table-container">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Medio</th>
+              <th>Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let entry of history">
+              <td>{{ entry.createdAt | date:'short' }}</td>
+              <td>{{ getMedioDisplayName(entry.medio) }}</td>
+              <td>${{ formatNumber(entry.balance) }} COP</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+

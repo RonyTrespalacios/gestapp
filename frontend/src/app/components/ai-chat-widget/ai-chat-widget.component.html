@@ -1,0 +1,118 @@
+<!-- Chat Widget Button (Floating) -->
+<div class="chat-widget-container">
+  <!-- Minimized Button -->
+  <button 
+    *ngIf="!isOpen || isMinimized"
+    class="chat-widget-button"
+    (click)="toggleWidget()"
+    title="Abrir asistente de IA">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+    <span class="pulse-indicator" *ngIf="isProcessing"></span>
+  </button>
+
+  <!-- Chat Window -->
+  <div class="chat-widget-window" *ngIf="isOpen && !isMinimized">
+    <!-- Header -->
+    <div class="chat-widget-header">
+      <div class="header-content">
+        <h3>Asistente de IA</h3>
+        <p>Describe tu transacción</p>
+      </div>
+      <div class="header-actions">
+        <button 
+          type="button"
+          class="btn-icon"
+          (click)="clearChat()"
+          title="Limpiar chat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+        <button 
+          type="button"
+          class="btn-icon"
+          (click)="minimizeWidget()"
+          title="Minimizar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Messages Area -->
+    <div class="chat-widget-messages" #chatMessages>
+      <div 
+        *ngFor="let msg of messages"
+        class="chat-message"
+        [class.user]="msg.type === 'user'"
+        [class.assistant]="msg.type === 'assistant'">
+        <div class="message-content">
+          <pre>{{ msg.content }}</pre>
+        </div>
+      </div>
+      
+      <!-- Processing Indicator -->
+      <div class="chat-message assistant" *ngIf="isProcessing">
+        <div class="message-content">
+          <div class="loading-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="chat-widget-input">
+      <div class="input-container" [class.focused]="isFocused" [class.recording]="isRecording">
+        <!-- Recording Indicator -->
+        <div class="recording-indicator" *ngIf="isRecording">
+          <div class="pulse"></div>
+          <span>Escuchando...</span>
+        </div>
+
+        <!-- Textarea -->
+        <textarea
+          #messageInput
+          [(ngModel)]="message"
+          [disabled]="isProcessing"
+          (focus)="isFocused = true"
+          (blur)="isFocused = false"
+          (input)="onTextareaInput()"
+          (keydown.enter)="onEnterPress($any($event))"
+          placeholder="Escribe o presiona el micrófono..."
+          rows="1"
+          class="message-textarea">
+        </textarea>
+
+        <!-- Action Buttons -->
+        <div class="input-actions">
+          <app-mic-toggle-button
+            *ngIf="speechAvailable"
+            [isActive]="isRecording"
+            [disabled]="isProcessing"
+            (toggle)="isRecording ? stopRecording() : startRecording()"
+            title="Activar/Desactivar micrófono">
+          </app-mic-toggle-button>
+          <button
+            type="button"
+            class="btn-send"
+            [disabled]="!message.trim() || isProcessing"
+            (click)="sendMessage()"
+            title="Enviar mensaje">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { Transaction } from './transaction.service';
 
 @Injectable({
@@ -7,6 +7,9 @@ import { Transaction } from './transaction.service';
 export class TransactionStateService {
   // Usando Angular Signal para mejor reactividad
   private transactionToEditSignal = signal<Transaction | null>(null);
+  
+  // Signal público para que los componentes puedan observar cambios
+  public readonly transactionToEdit$ = computed(() => this.transactionToEditSignal());
 
   setTransactionToEdit(transaction: Transaction): void {
     console.log('🔵 Guardando transacción para editar:', transaction);
