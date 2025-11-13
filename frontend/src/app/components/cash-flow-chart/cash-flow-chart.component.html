@@ -1,0 +1,183 @@
+<div class="chart-container" #chartContainer>
+  <div class="chart-header">
+    <h2>Evolución del Flujo de Caja Acumulado</h2>
+    <p class="chart-subtitle">Últimos 12 meses con datos</p>
+  </div>
+
+  <div class="chart-wrapper" *ngIf="monthlyData.length > 0">
+    <svg 
+      [attr.width]="chartWidth" 
+      [attr.height]="chartHeight" 
+      class="chart-svg"
+      [style.max-width]="'100%'"
+      [style.height]="'auto'"
+      preserveAspectRatio="xMidYMid meet">
+
+      <!-- Fondo del área de gráfico -->
+      <rect
+        [attr.x]="padding.left"
+        [attr.y]="padding.top"
+        [attr.width]="plotWidth"
+        [attr.height]="plotHeight"
+        fill="#fafafa"
+        stroke="#000"
+        stroke-width="2"
+      />
+
+      <!-- Grid lines horizontales -->
+      <g class="grid-lines">
+        <line
+          *ngFor="let label of getYAxisLabels()"
+          [attr.x1]="padding.left"
+          [attr.y1]="label.y"
+          [attr.x2]="padding.left + plotWidth"
+          [attr.y2]="label.y"
+          class="grid-line"
+        />
+      </g>
+
+      <!-- Línea de cero -->
+      <line
+        *ngIf="minValue < 0 && maxValue > 0"
+        [attr.x1]="padding.left"
+        [attr.y1]="getYPosition(0)"
+        [attr.x2]="padding.left + plotWidth"
+        [attr.y2]="getYPosition(0)"
+        class="zero-line"
+        stroke-dasharray="5,5"
+      />
+
+      <!-- Línea del gráfico -->
+      <path
+        [attr.d]="getChartPath()"
+        class="chart-line"
+        fill="none"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+
+      <!-- Área bajo la curva (opcional, estilo más profesional) -->
+      <path
+        *ngIf="monthlyData.length > 0"
+        [attr.d]="getAreaPath()"
+        class="chart-area"
+        fill="#000"
+        opacity="0.05"
+      />
+
+      <!-- Puntos de datos -->
+      <g class="data-points">
+        <g *ngFor="let point of getChartPoints()" class="point-group">
+          <!-- Círculo del punto -->
+          <circle
+            [attr.cx]="point.x"
+            [attr.cy]="point.y"
+            r="6"
+            class="data-point"
+            [class.last-point]="point.isLast"
+          />
+          <!-- Círculo exterior para hover -->
+          <circle
+            [attr.cx]="point.x"
+            [attr.cy]="point.y"
+            r="10"
+            class="data-point-hover"
+            opacity="0"
+          />
+          <!-- Etiqueta del valor -->
+          <g class="value-label">
+            <rect
+              [attr.x]="point.x - 60"
+              [attr.y]="point.y - 45"
+              width="120"
+              height="38"
+              class="label-bg"
+              rx="2"
+            />
+            <text
+              [attr.x]="point.x"
+              [attr.y]="point.y - 28"
+              class="label-text label-month"
+              text-anchor="middle"
+            >
+              {{ point.month }}
+            </text>
+            <text
+              [attr.x]="point.x"
+              [attr.y]="point.y - 15"
+              class="label-text label-value"
+              text-anchor="middle"
+            >
+              ${{ formatValue(point.value) }}
+            </text>
+          </g>
+        </g>
+      </g>
+
+      <!-- Etiquetas del eje Y (izquierda) -->
+      <g class="y-axis">
+        <text
+          [attr.x]="padding.left - 20"
+          [attr.y]="padding.top - 10"
+          class="axis-title"
+          text-anchor="middle"
+        >
+          Valor ($)
+        </text>
+        <g *ngFor="let label of getYAxisLabels()">
+          <line
+            [attr.x1]="padding.left - 5"
+            [attr.y1]="label.y"
+            [attr.x2]="padding.left"
+            [attr.y2]="label.y"
+            class="axis-tick"
+          />
+          <text
+            [attr.x]="padding.left - 10"
+            [attr.y]="label.y + 5"
+            class="axis-label y-label"
+            text-anchor="end"
+            dominant-baseline="middle"
+          >
+            ${{ formatValue(label.value) }}
+          </text>
+        </g>
+      </g>
+
+      <!-- Etiquetas del eje X (abajo) -->
+      <g class="x-axis">
+        <text
+          [attr.x]="padding.left + plotWidth / 2"
+          [attr.y]="chartHeight - 10"
+          class="axis-title"
+          text-anchor="middle"
+        >
+          Mes
+        </text>
+        <g *ngFor="let data of monthlyData; let i = index">
+          <line
+            [attr.x1]="getXPosition(data.displayIndex)"
+            [attr.y1]="padding.top + plotHeight"
+            [attr.x2]="getXPosition(data.displayIndex)"
+            [attr.y2]="padding.top + plotHeight + 5"
+            class="axis-tick"
+          />
+          <text
+            [attr.x]="getXPosition(data.displayIndex)"
+            [attr.y]="padding.top + plotHeight + 25"
+            class="axis-label x-label"
+            text-anchor="middle"
+            dominant-baseline="hanging"
+          >
+            {{ data.month }}
+          </text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div class="chart-empty" *ngIf="monthlyData.length === 0">
+    <p>No hay datos suficientes para mostrar la gráfica</p>
+  </div>
+</div>

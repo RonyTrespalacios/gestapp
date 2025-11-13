@@ -1,0 +1,102 @@
+<div class="kpi-section">
+  <div class="kpi-grid">
+    <!-- KPI: Liquidez Total -->
+    <div class="kpi-card">
+      <div class="kpi-label">Liquidez Total</div>
+      <div class="kpi-value">
+        {{ formattedLiquidity }}
+      </div>
+      <div class="kpi-description">
+        Suma de balances en todos los medios de pago
+      </div>
+    </div>
+    
+    <!-- KPI: Flujo de Caja Total -->
+    <div class="kpi-card">
+      <div class="kpi-label">Flujo de Caja Total</div>
+      <div class="kpi-value" [class.positive]="cashFlow >= 0" [class.negative]="cashFlow < 0">
+        {{ formattedCashFlow }}
+      </div>
+      <div class="kpi-description">
+        Suma de todas las transacciones (ingresos - egresos)
+      </div>
+    </div>
+
+    <!-- KPI: Discrepancia -->
+    <div class="kpi-card" [class.discrepancy-zero]="isDiscrepancyAcceptable" [class.discrepancy-warning]="!isDiscrepancyAcceptable">
+      <div class="kpi-header">
+        <div class="kpi-label">Discrepancia</div>
+        <button class="info-button" (click)="openInfoModal()" title="Información sobre discrepancia">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="kpi-value" 
+           [class.positive]="isDiscrepancyAcceptable || discrepancy > 0" 
+           [class.negative]="!isDiscrepancyAcceptable && discrepancy < 0"
+           [class.zero]="isDiscrepancyAcceptable">
+        {{ formattedDiscrepancy }}
+      </div>
+      <div class="kpi-description">
+        {{ isDiscrepancyAcceptable ? '✅ Balance correcto' : '⚠️ Revisa tus registros' }}
+      </div>
+      <div class="kpi-formula">
+        Liquidez - Flujo de Caja
+      </div>
+      <div class="kpi-actions" *ngIf="!isDiscrepancyAcceptable">
+        <button class="reconcile-button" (click)="openReconcileModal()">
+          Conciliar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de información sobre discrepancia -->
+<app-modal
+  [title]="'¿Qué es la Discrepancia?'"
+  [message]="getDiscrepancyExplanation()"
+  [type]="'info'"
+  [show]="showInfoModal"
+  [showConfirmButtons]="false"
+  (close)="closeInfoModal()">
+</app-modal>
+
+<!-- Modal de conciliación -->
+<app-modal
+  [title]="'Conciliar Discrepancia'"
+  [message]="'¿Cómo deseas conciliar la discrepancia de ' + formattedDiscrepancy + '?'"
+  [type]="'info'"
+  [show]="showReconcileModal"
+  [showConfirmButtons]="false"
+  [closeOnOverlayClick]="true"
+  (close)="closeReconcileModal()">
+  <div class="reconcile-options">
+    <button class="reconcile-option-button" (click)="reconcileByRegisterTransaction()">
+      <div class="option-icon">📝</div>
+      <div class="option-content">
+        <div class="option-title">
+          {{ discrepancy < 0 ? 'Registrar Egreso' : 'Registrar Ingreso' }}
+        </div>
+        <div class="option-description">
+          {{ discrepancy < 0 
+            ? 'Registra el egreso faltante en el flujo de caja' 
+            : 'Registra el ingreso faltante en el flujo de caja' }}
+        </div>
+      </div>
+    </button>
+    <button class="reconcile-option-button" (click)="reconcileByUpdateBalances()">
+      <div class="option-icon">💰</div>
+      <div class="option-content">
+        <div class="option-title">Actualizar Saldos</div>
+        <div class="option-description">
+          Actualiza los balances de liquidez en tus medios de pago
+        </div>
+      </div>
+    </button>
+  </div>
+</app-modal>
+
