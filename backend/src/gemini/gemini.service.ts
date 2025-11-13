@@ -21,7 +21,9 @@ export class GeminiService {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     this.genAI = new GoogleGenerativeAI(apiKey);
     // Usar modelo estable disponible
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    this.model = this.genAI.getGenerativeModel({
+      model: "gemini-2.5-flash-lite",
+    });
   }
 
   async parseTransaction(userInput: string): Promise<ParsedTransaction> {
