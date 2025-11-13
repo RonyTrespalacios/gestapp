@@ -1,0 +1,50 @@
+<div class="chart-container">
+  <div class="chart-header">
+    <h2>Distribución por Categoría</h2>
+    <p class="chart-subtitle">Porcentajes de gastos e inversión</p>
+  </div>
+
+  <!-- Selector de mes estilo Tableau -->
+  <div class="month-selector" *ngIf="transactions && transactions.length > 0">
+    <label for="monthSelect" class="selector-label">Filtro:</label>
+    <select 
+      id="monthSelect"
+      [(ngModel)]="selectedMonth" 
+      (ngModelChange)="onMonthChange()"
+      class="month-select">
+      <option value="all">Todos los registros</option>
+      <option *ngFor="let month of availableMonths" [value]="month.monthKey">
+        {{ month.label }}
+      </option>
+    </select>
+  </div>
+
+  <div class="chart-wrapper" *ngIf="categoryData.length > 0">
+    <div class="bars-container">
+      <div *ngFor="let category of categoryData" class="bar-row">
+        <div class="category-label">
+          <span class="category-name">{{ category.categoria }}</span>
+        </div>
+        <div class="bar-container">
+          <div 
+            class="bar" 
+            [style.width.px]="getBarWidth(category.percentage)"
+            [style.background-color]="category.color">
+            <div class="tooltip">
+              <span class="tooltip-text">{{ formatPercentage(category.percentage) }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-empty" *ngIf="categoryData.length === 0 && selectedMonth">
+    <p>No hay datos disponibles</p>
+  </div>
+
+  <div class="chart-empty" *ngIf="availableMonths.length === 0">
+    <p>No hay transacciones disponibles</p>
+  </div>
+</div>
+

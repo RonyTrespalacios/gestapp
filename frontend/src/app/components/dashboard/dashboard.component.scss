@@ -184,6 +184,29 @@
   color: #666;
 }
 
+.charts-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 30px;
+  margin-bottom: 40px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  // Asegurar que los componentes hijos no se desborden
+  > * {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+}
+
 .reconcile-options {
   display: flex;
   flex-direction: column;

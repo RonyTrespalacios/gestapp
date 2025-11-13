@@ -1,0 +1,273 @@
+.chart-container {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 0;
+  background: #fff;
+  border: 3px solid #000;
+  padding: 30px;
+  box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chart-header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #000;
+  padding-bottom: 15px;
+
+  h2 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 16px;
+    margin: 0 0 8px 0;
+    color: #000;
+  }
+
+  .chart-subtitle {
+    font-size: 10px;
+    color: #666;
+    margin: 0;
+  }
+}
+
+.month-selector {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  padding: 15px;
+  background: #fafafa;
+  border: 2px solid #000;
+
+  .selector-label {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    color: #000;
+    text-transform: uppercase;
+  }
+
+  .month-select {
+    flex: 1;
+    max-width: 200px;
+    padding: 10px 15px;
+    border: 2px solid #000;
+    background: #fff;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    color: #000;
+    cursor: pointer;
+    transition: all 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 35px;
+
+    &:hover {
+      background-color: #f5f5f5;
+      transform: translateY(-1px);
+      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #000;
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+.content-wrapper {
+  width: 100%;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  min-width: 0;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+}
+
+.section {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+
+  .section-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 12px;
+    color: #000;
+    margin: 0 0 20px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #000;
+    text-transform: uppercase;
+  }
+}
+
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 15px;
+  background: #fafafa;
+  border: 2px solid #000;
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  }
+
+  .item-rank {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+    color: #000;
+    font-weight: bold;
+    min-width: 40px;
+    flex-shrink: 0;
+  }
+
+  .item-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+
+    .item-main {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+
+      .item-amount {
+        font-family: 'Press Start 2P', cursive;
+        font-size: 12px;
+        color: #000;
+        font-weight: bold;
+      }
+
+      .item-category {
+        font-family: 'Press Start 2P', cursive;
+        font-size: 8px;
+        color: #666;
+        text-transform: uppercase;
+        padding: 4px 8px;
+        background: #fff;
+        border: 1px solid #000;
+      }
+
+      .item-count {
+        font-family: 'Press Start 2P', cursive;
+        font-size: 8px;
+        color: #666;
+      }
+    }
+
+    .item-details {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+
+      .item-description {
+        font-size: 11px;
+        color: #000;
+        word-break: break-word;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .item-date {
+        font-size: 9px;
+        color: #666;
+        flex-shrink: 0;
+      }
+    }
+  }
+}
+
+.chart-empty {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 12px;
+  color: #666;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    padding: 20px;
+  }
+
+  .chart-header {
+    h2 {
+      font-size: 12px;
+    }
+
+    .chart-subtitle {
+      font-size: 9px;
+    }
+  }
+
+  .month-selector {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+
+    .month-select {
+      max-width: 100%;
+      width: 100%;
+    }
+  }
+
+  .section {
+    .section-title {
+      font-size: 10px;
+    }
+  }
+
+  .list-item {
+    flex-direction: column;
+    gap: 10px;
+
+    .item-rank {
+      min-width: auto;
+    }
+
+    .item-content {
+      .item-main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .item-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+      }
+    }
+  }
+}
+

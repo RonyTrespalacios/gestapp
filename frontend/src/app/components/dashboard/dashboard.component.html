@@ -24,10 +24,33 @@
     (reconcileClick)="onReconcileClick()">
   </app-dashboard-kpis>
 
-  <!-- Componente de gráfica -->
+  <!-- Componente de gráfica de línea (acumulado) -->
   <app-cash-flow-chart
     *ngIf="!isLoading"
     [transactions]="transactions">
   </app-cash-flow-chart>
+
+  <!-- Componente de gráfica de barras (mensual) -->
+  <app-cash-flow-bars
+    *ngIf="!isLoading"
+    [transactions]="transactions">
+  </app-cash-flow-bars>
+
+  <!-- Fila compartida: Categorías y Runway -->
+  <div class="charts-row" *ngIf="!isLoading">
+    <app-category-bars
+      [transactions]="transactions">
+    </app-category-bars>
+    
+    <app-runway-bars
+      [totalLiquidity]="totalLiquidity">
+    </app-runway-bars>
+  </div>
+
+  <!-- Componente Top 5 Transacciones -->
+  <app-top-transactions
+    *ngIf="!isLoading"
+    [transactions]="transactions">
+  </app-top-transactions>
 </div>
 

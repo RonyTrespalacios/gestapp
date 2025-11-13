@@ -1,0 +1,67 @@
+<div class="chart-container">
+  <div class="chart-header">
+    <h2>Top 5 Egresos y Descripciones</h2>
+    <p class="chart-subtitle">Mayores egresos y descripciones con más gasto</p>
+  </div>
+
+  <!-- Selector de mes sincronizado -->
+  <div class="month-selector" *ngIf="transactions && transactions.length > 0">
+    <label for="monthSelect" class="selector-label">Filtro:</label>
+    <select 
+      id="monthSelect"
+      [(ngModel)]="selectedMonth" 
+      (ngModelChange)="onMonthChange()"
+      class="month-select">
+      <option value="all">Todos los registros</option>
+      <option *ngFor="let month of availableMonths" [value]="month.monthKey">
+        {{ month.label }}
+      </option>
+    </select>
+  </div>
+
+  <div class="content-wrapper" *ngIf="topTransactions.length > 0 || topDescriptions.length > 0">
+    <!-- Top 5 Egresos más grandes -->
+    <div class="section" *ngIf="topTransactions.length > 0">
+      <h3 class="section-title">Top 5 Egresos Más Grandes</h3>
+      <div class="list-container">
+        <div *ngFor="let item of topTransactions; let i = index" class="list-item">
+          <div class="item-rank">#{{ i + 1 }}</div>
+          <div class="item-content">
+            <div class="item-main">
+              <span class="item-amount">${{ item.formattedAmount }}</span>
+              <span class="item-category">{{ item.transaction.categoria }}</span>
+            </div>
+            <div class="item-details">
+              <span class="item-description">{{ item.transaction.descripcion || 'Sin descripción' }}</span>
+              <span class="item-date">{{ formatDate(item.transaction.fecha) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 5 Descripciones con más gasto neto -->
+    <div class="section" *ngIf="topDescriptions.length > 0">
+      <h3 class="section-title">Top 5 Descripciones con Más Gasto Neto</h3>
+      <div class="list-container">
+        <div *ngFor="let item of topDescriptions; let i = index" class="list-item">
+          <div class="item-rank">#{{ i + 1 }}</div>
+          <div class="item-content">
+            <div class="item-main">
+              <span class="item-amount">${{ item.formattedTotal }}</span>
+              <span class="item-count">({{ item.count }} {{ item.count === 1 ? 'vez' : 'veces' }})</span>
+            </div>
+            <div class="item-details">
+              <span class="item-description">{{ item.descripcion || 'Sin descripción' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-empty" *ngIf="topTransactions.length === 0 && topDescriptions.length === 0 && selectedMonth">
+    <p>No hay datos disponibles</p>
+  </div>
+</div>
+

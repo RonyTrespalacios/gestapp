@@ -1,0 +1,37 @@
+<div class="chart-container">
+  <div class="chart-header">
+    <h2>Gasto Mensual Disponible</h2>
+    <p class="chart-subtitle">Sin ingresos adicionales</p>
+  </div>
+
+  <div class="chart-wrapper" *ngIf="runwayData.length > 0 && totalLiquidity > 0">
+    <div class="bars-container">
+      <div *ngFor="let runway of runwayData" class="bar-row">
+        <div class="period-label">
+          <span class="period-name">{{ runway.label }}</span>
+        </div>
+        <div class="bar-container">
+          <div 
+            class="bar" 
+            [style.width.%]="getBarWidth(runway.monthlyAmount)">
+            <div class="tooltip">
+              <span class="tooltip-text">${{ formatValue(runway.monthlyAmount) }}/mes</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="info-section">
+      <p class="info-text">
+        Basado en tu liquidez actual de ${{ formatValue(totalLiquidity) }}
+      </p>
+    </div>
+  </div>
+
+  <div class="chart-empty" *ngIf="totalLiquidity <= 0">
+    <p>No hay liquidez disponible para calcular</p>
+  </div>
+</div>
+

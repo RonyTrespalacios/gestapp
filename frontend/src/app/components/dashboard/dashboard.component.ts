@@ -5,11 +5,15 @@ import { LiquidityService } from '../../services/liquidity.service';
 import { AiChatWidgetComponent } from '../ai-chat-widget/ai-chat-widget.component';
 import { DashboardKpisComponent } from '../dashboard-kpis/dashboard-kpis.component';
 import { CashFlowChartComponent } from '../cash-flow-chart/cash-flow-chart.component';
+import { CashFlowBarsComponent } from '../cash-flow-bars/cash-flow-bars.component';
+import { CategoryBarsComponent } from '../category-bars/category-bars.component';
+import { RunwayBarsComponent } from '../runway-bars/runway-bars.component';
+import { TopTransactionsComponent } from '../top-transactions/top-transactions.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, AiChatWidgetComponent, DashboardKpisComponent, CashFlowChartComponent],
+  imports: [CommonModule, AiChatWidgetComponent, DashboardKpisComponent, CashFlowChartComponent, CashFlowBarsComponent, CategoryBarsComponent, RunwayBarsComponent, TopTransactionsComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
