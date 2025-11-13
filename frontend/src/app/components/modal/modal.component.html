@@ -1,24 +1,26 @@
-<div class="modal-overlay" *ngIf="show" (click)="closeModal()">
+<div class="modal-overlay" *ngIf="show" (click)="onOverlayClick()">
   <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
+    <div class="modal-header" [class]="'type-' + type">
       <h3>{{ title }}</h3>
       <button class="modal-close" (click)="closeModal()">✕</button>
     </div>
     <div class="modal-body" [class]="'type-' + type">
-      <p>{{ message }}</p>
+      <p *ngIf="message">{{ message }}</p>
+      <ng-content></ng-content>
     </div>
     <div class="modal-footer">
-      <button 
-        *ngIf="showConfirmButtons" 
-        class="btn btn-confirm" 
+      <app-retro-button
+        *ngIf="showConfirmButtons"
+        [disabled]="confirmDisabled"
+        [variant]="confirmButtonVariant"
         (click)="confirmAction()">
-        Confirmar
-      </button>
-      <button 
-        class="btn btn-primary" 
+        {{ confirmLabel }}
+      </app-retro-button>
+      <app-retro-button
+        variant="primary"
         (click)="closeModal()">
-        {{ showConfirmButtons ? 'Cancelar' : 'Aceptar' }}
-      </button>
+        {{ showConfirmButtons ? cancelLabel : 'Aceptar' }}
+      </app-retro-button>
     </div>
   </div>
 </div>

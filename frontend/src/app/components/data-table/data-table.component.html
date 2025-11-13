@@ -89,7 +89,7 @@
           <td [attr.data-label]="'Categoria'">{{ transaction.categoria }}</td>
           <td class="col-descripcion" [attr.data-label]="'Descripcion'">{{ transaction.descripcion }}</td>
           <td [attr.data-label]="'Tipo'">{{ transaction.tipo }}</td>
-          <td [attr.data-label]="'Monto'">${{ transaction.monto | number:'1.0-0' }}</td>
+          <td [attr.data-label]="'Monto'">{{ formatAmount(transaction.monto) }}</td>
           <td [attr.data-label]="'Medio'">{{ transaction.medio }}</td>
           <td class="col-observaciones" [attr.data-label]="'Observaciones'">{{ transaction.observaciones || '-' }}</td>
           <td [attr.data-label]="'Acciones'">

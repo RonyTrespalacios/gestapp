@@ -23,6 +23,10 @@ export class DataTableComponent implements OnInit {
   modalType: 'success' | 'error' | 'info' = 'info';
   showConfirmModal = false;
   pendingDeleteId: number | null = null;
+  private readonly numberFormatter = new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  });
 
   constructor(private transactionService: TransactionService) {}
 
@@ -156,10 +160,19 @@ export class DataTableComponent implements OnInit {
           this.showModalMessage('Éxito', 'Archivo importado exitosamente', 'success');
           this.selectedFile = null;
           this.loadTransactions();
+          this.isLoading = false;
         },
         error: (error) => {
           console.error('Error uploading CSV:', error);
-          this.showModalMessage('Error', 'Error al importar', 'error');
+          const details = error?.error?.details;
+          let message =
+            error?.error?.message ??
+            'Error al importar. Verifica el formato del archivo e inténtalo nuevamente.';
+
+          if (Array.isArray(details) && details.length > 0) {
+            message += `\n\nDetalles:\n- ${details.join('\n- ')}`;
+          }
+          this.showModalMessage('Error', message, 'error');
           this.isLoading = false;
         }
       });
@@ -197,6 +210,16 @@ export class DataTableComponent implements OnInit {
 
   closeModal() {
     this.showModal = false;
+  }
+
+  formatAmount(amount: number | null | undefined): string {
+    const numericValue = typeof amount === 'string' ? Number(amount) : amount;
+
+    if (!Number.isFinite(numericValue ?? NaN)) {
+      return '$ --';
+    }
+
+    return `$ ${this.numberFormatter.format(numericValue as number)}`;
   }
 }
 

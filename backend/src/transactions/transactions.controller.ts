@@ -78,6 +78,13 @@ export class TransactionsController {
     return this.transactionsService.update(+id, updateTransactionDto, user.userId);
   }
 
+  @Delete('purge')
+  @ApiOperation({ summary: 'Eliminar todas las transacciones del usuario autenticado' })
+  @ApiResponse({ status: 200, description: 'Transacciones del usuario eliminadas' })
+  removeAll(@CurrentUser() user: any) {
+    return this.transactionsService.removeAllForUser(user.userId);
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Eliminar transacción' })
   @ApiResponse({ status: 200, description: 'Transacción eliminada' })

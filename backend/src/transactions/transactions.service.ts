@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
@@ -7,22 +7,41 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
 
 @Injectable()
 export class TransactionsService {
+  private readonly logger = new Logger(TransactionsService.name);
+
+  private static readonly CATEGORIAS_VALIDAS = ['Necesidad', 'Lujo', 'Ahorro', 'Entrada'] as const;
+  private static readonly TIPOS_VALIDOS = ['Ingreso', 'Egreso', 'Ahorro'] as const;
+  private static readonly MEDIOS_VALIDOS = [
+    'Efectivo',
+    'NU',
+    'Daviplata',
+    'Nequi',
+    'BBVA',
+    'Bancolombia',
+    'Davivienda',
+    'Otro',
+  ] as const;
+
   constructor(
     @InjectRepository(Transaction)
     private readonly transactionRepository: Repository<Transaction>,
   ) {}
 
   async create(createTransactionDto: CreateTransactionDto, userId: number): Promise<Transaction> {
+    const monto = this.ensureValidMonto(createTransactionDto.monto);
+    this.ensureValidTipo(createTransactionDto.tipo);
+    this.ensureValidCategoria(createTransactionDto.categoria);
+    this.ensureValidMedio(createTransactionDto.medio);
+
     const transaction = this.transactionRepository.create({
       ...createTransactionDto,
+      monto,
       userId,
+      fecha: new Date(createTransactionDto.fecha),
     });
     
     // Calcular el valor basado en el tipo
-    transaction.valor = 
-      createTransactionDto.tipo === 'Egreso' 
-        ? -Math.abs(createTransactionDto.monto)
-        : Math.abs(createTransactionDto.monto);
+    transaction.valor = this.calculateValor(createTransactionDto.tipo, monto);
 
     return await this.transactionRepository.save(transaction);
   }
@@ -47,13 +66,37 @@ export class TransactionsService {
   async update(id: number, updateTransactionDto: UpdateTransactionDto, userId: number): Promise<Transaction> {
     const transaction = await this.findOne(id, userId);
     
+    if (updateTransactionDto.tipo) {
+      this.ensureValidTipo(updateTransactionDto.tipo);
+    }
+
+    if (updateTransactionDto.categoria) {
+      this.ensureValidCategoria(updateTransactionDto.categoria);
+    }
+
+    if (updateTransactionDto.medio) {
+      this.ensureValidMedio(updateTransactionDto.medio);
+    }
+
+    if (updateTransactionDto.fecha) {
+      transaction.fecha = new Date(updateTransactionDto.fecha);
+      if (Number.isNaN(transaction.fecha.getTime())) {
+        throw new BadRequestException('La fecha proporcionada no es válida.');
+      }
+    }
+
     Object.assign(transaction, updateTransactionDto);
     
     // Recalcular el valor si se actualiza el tipo o monto
     if (updateTransactionDto.tipo || updateTransactionDto.monto) {
       const tipo = updateTransactionDto.tipo || transaction.tipo;
-      const monto = updateTransactionDto.monto || transaction.monto;
-      transaction.valor = tipo === 'Egreso' ? -Math.abs(monto) : Math.abs(monto);
+      const montoBase =
+        updateTransactionDto.monto !== undefined
+          ? this.ensureValidMonto(updateTransactionDto.monto)
+          : transaction.monto;
+
+      transaction.monto = montoBase;
+      transaction.valor = this.calculateValor(tipo, montoBase);
     }
 
     return await this.transactionRepository.save(transaction);
@@ -63,11 +106,18 @@ export class TransactionsService {
     const transaction = await this.findOne(id, userId);
     await this.transactionRepository.remove(transaction);
 
-    // Si el usuario ya no tiene transacciones, reiniciar su secuencia
-    const total = await this.transactionRepository.count({ where: { userId } });
-    if (total === 0) {
-      await this.transactionRepository.query('ALTER SEQUENCE "transactions_id_seq" RESTART WITH 1');
+    await this.resetSequenceIfNoTransactions(userId);
+  }
+
+  async removeAllForUser(userId: number): Promise<{ deleted: number }> {
+    const result = await this.transactionRepository.delete({ userId });
+    const deleted = result.affected ?? 0;
+
+    if (deleted >= 0) {
+      await this.resetSequenceIfNoTransactions(userId);
     }
+
+    return { deleted };
   }
 
   async exportToCsv(userId: number): Promise<string> {
@@ -109,41 +159,70 @@ export class TransactionsService {
 
     // Skip header
     const dataLines = lines.slice(1);
-    let imported = 0;
+    const transactionsToSave: Transaction[] = [];
+    const errors: string[] = [];
 
-    for (const line of dataLines) {
+    dataLines.forEach((line, index) => {
+      const rowNumber = index + 2; // +2 to account for header and 0-based index
+
+      if (!line.trim()) {
+        return;
+      }
+
+      const values = this.parseCSVLine(line);
+
+      if (values.length < 8) {
+        errors.push(`Fila ${rowNumber}: Formato incompleto.`);
+        return;
+      }
+
+      const [, categoria, descripcion, tipo, montoStr, medio, fechaStr, observaciones] = values;
+
       try {
-        const values = this.parseCSVLine(line);
-        
-        if (values.length < 8) continue;
+        this.ensureValidCategoria(categoria);
+        this.ensureValidTipo(tipo);
+        this.ensureValidMedio(medio);
 
-        const [idStr, categoria, descripcion, tipo, monto, medio, fecha, observaciones] = values;
+        const monto = this.ensureValidMonto(montoStr);
+        const fecha = new Date(fechaStr);
 
-        // Crear objeto base de transacción (sin ID, siempre asignar al usuario actual)
-        const transactionData: any = {
+        if (Number.isNaN(fecha.getTime())) {
+          throw new BadRequestException('La fecha no tiene un formato válido (YYYY-MM-DD).');
+        }
+
+        const transaction = this.transactionRepository.create({
           userId,
           categoria,
           descripcion: descripcion.replace(/""/g, '"'),
           tipo,
-          monto: parseFloat(monto),
+          monto,
           medio,
-          fecha: new Date(fecha),
+          fecha,
           observaciones: observaciones ? observaciones.replace(/""/g, '"') : null,
-        };
+        });
 
-        const transaction = this.transactionRepository.create(transactionData) as unknown as Transaction;
-        transaction.valor = tipo === 'Egreso' 
-          ? -Math.abs(parseFloat(monto))
-          : Math.abs(parseFloat(monto));
+        transaction.valor = this.calculateValor(tipo, monto);
 
-        await this.transactionRepository.save(transaction);
-        imported++;
+        transactionsToSave.push(transaction);
       } catch (error) {
-        console.error('Error processing line:', line, error);
+        const message = this.extractErrorMessage(error);
+        errors.push(`Fila ${rowNumber}: ${message}`);
       }
+    });
+
+    if (errors.length > 0) {
+      throw new BadRequestException({
+        message: 'El archivo contiene errores de formato.',
+        details: errors,
+      });
     }
 
-    return { imported };
+    if (!transactionsToSave.length) {
+      throw new BadRequestException('El archivo CSV no contiene transacciones válidas.');
+    }
+
+    await this.transactionRepository.save(transactionsToSave);
+    return { imported: transactionsToSave.length };
   }
 
   private parseCSVLine(line: string): string[] {
@@ -171,5 +250,102 @@ export class TransactionsService {
     
     result.push(current);
     return result;
+  }
+
+  private ensureValidMonto(value: unknown): number {
+    if (value === null || value === undefined) {
+      throw new BadRequestException('El monto es obligatorio.');
+    }
+
+    const numericValue =
+      typeof value === 'string'
+        ? Number(value.replace(/,/g, '').trim())
+        : Number(value);
+
+    if (!Number.isFinite(numericValue)) {
+      throw new BadRequestException('El monto debe ser un número válido.');
+    }
+
+    if (numericValue < 0) {
+      throw new BadRequestException('El monto debe ser un número positivo.');
+    }
+
+    return numericValue;
+  }
+
+  private calculateValor(tipo: string, monto: number): number {
+    if (tipo === 'Egreso') {
+      return -Math.abs(monto);
+    }
+
+    return Math.abs(monto);
+  }
+
+  private ensureValidCategoria(value: string): void {
+    if (!TransactionsService.CATEGORIAS_VALIDAS.includes(value as any)) {
+      throw new BadRequestException(
+        `Categoría inválida. Valores permitidos: ${TransactionsService.CATEGORIAS_VALIDAS.join(', ')}.`,
+      );
+    }
+  }
+
+  private ensureValidTipo(value: string): void {
+    if (!TransactionsService.TIPOS_VALIDOS.includes(value as any)) {
+      throw new BadRequestException(
+        `Tipo inválido. Valores permitidos: ${TransactionsService.TIPOS_VALIDOS.join(', ')}.`,
+      );
+    }
+  }
+
+  private ensureValidMedio(value: string): void {
+    if (!TransactionsService.MEDIOS_VALIDOS.includes(value as any)) {
+      throw new BadRequestException(
+        `Medio inválido. Valores permitidos: ${TransactionsService.MEDIOS_VALIDOS.join(', ')}.`,
+      );
+    }
+  }
+
+  private async resetSequenceIfNoTransactions(userId: number): Promise<void> {
+    const userTotal = await this.transactionRepository.count({ where: { userId } });
+    
+    // Solo reiniciar la secuencia si el usuario no tiene transacciones
+    // Y si la tabla está completamente vacía (sin transacciones de ningún usuario)
+    if (userTotal === 0) {
+      const globalTotal = await this.transactionRepository.count();
+      
+      // Solo reiniciar si la tabla está completamente vacía
+      if (globalTotal === 0) {
+        try {
+          await this.transactionRepository.query('ALTER SEQUENCE IF EXISTS "transactions_id_seq" RESTART WITH 1');
+        } catch (error) {
+          this.logger.warn(`No se pudo reiniciar la secuencia de transacciones: ${this.extractErrorMessage(error)}`);
+        }
+      }
+    }
+  }
+
+  private extractErrorMessage(error: unknown): string {
+    if (error instanceof BadRequestException) {
+      const response = error.getResponse();
+      if (typeof response === 'string') {
+        return response;
+      }
+      if (response && typeof response === 'object') {
+        const maybeMessage = (response as any).message;
+        if (typeof maybeMessage === 'string') {
+          return maybeMessage;
+        }
+        if (Array.isArray(maybeMessage)) {
+          return maybeMessage.join(', ');
+        }
+      }
+      return error.message;
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return 'Error desconocido';
   }
 }

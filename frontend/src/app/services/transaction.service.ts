@@ -43,6 +43,10 @@ export class TransactionService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
+  deleteAllForCurrentUser(): Observable<{ deleted: number }> {
+    return this.http.delete<{ deleted: number }>(`${this.apiUrl}/purge`);
+  }
+
   exportCsv(): Observable<Blob> {
     return this.http.get(`${this.apiUrl}/export/csv`, {
       responseType: 'blob'

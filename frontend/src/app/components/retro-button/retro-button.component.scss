@@ -1,0 +1,68 @@
+:host {
+  display: inline-flex;
+}
+
+.retro-btn {
+  padding: 15px 30px;
+  border: 2px solid #000;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  background: #000;
+  color: #fff;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  &.variant-primary {
+    background: #000;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: #fff;
+      color: #000;
+    }
+  }
+
+  &.variant-confirm {
+    background: #4caf50;
+    border-color: #4caf50;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: #fff;
+      color: #4caf50;
+    }
+  }
+
+  &.variant-danger {
+    background: #f44336;
+    border-color: #f44336;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: #fff;
+      color: #f44336;
+    }
+  }
+
+  &.variant-ghost {
+    background: transparent;
+    color: #000;
+
+    &:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+

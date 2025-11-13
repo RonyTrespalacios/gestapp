@@ -36,5 +36,11 @@ export const routes: Routes = [
     loadComponent: () => import('./components/data-table/data-table.component').then(m => m.DataTableComponent),
     canActivate: [authGuard]
   },
+  {
+    path: 'configuracion',
+    loadComponent: () => import('./components/settings/settings.component').then(m => m.SettingsComponent),
+    canActivate: [authGuard],
+    runGuardsAndResolvers: 'always'
+  },
   { path: '**', redirectTo: '/home' }
 ];

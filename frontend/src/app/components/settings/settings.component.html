@@ -1,0 +1,77 @@
+<div class="settings-page">
+  <header class="settings-header">
+    <h1>Configuración</h1>
+  </header>
+
+  <section class="settings-section">
+    <div class="section-header">
+      <h2>Gestión de datos personales</h2>
+      <p>
+        Controla tus registros financieros vinculados a tu cuenta. Las acciones disponibles solo
+        impactan tu usuario autenticado y están protegidas por confirmaciones adicionales.
+      </p>
+    </div>
+
+    <div class="danger-zone">
+      <div class="danger-content">
+        <h3>Eliminar todos tus datos financieros</h3>
+        <p>
+          Esta acción eliminará definitivamente todas tus transacciones. Esta operación no se puede deshacer.
+        </p>
+
+        <app-retro-button variant="danger" (click)="startDeletionFlow()">
+          Eliminar todos mis datos
+        </app-retro-button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal confirmación inicial -->
+  <app-modal
+    [title]="confirmDeletionModal.title"
+    [message]="confirmDeletionModal.message"
+    type="error"
+    [show]="confirmDeletionModal.show"
+    [showConfirmButtons]="true"
+    confirmLabel="Sí, eliminar"
+    cancelLabel="No, cancelar"
+    [closeOnOverlayClick]="false"
+    (confirm)="proceedToVerification()"
+    (close)="cancelDeletionFlow()">
+  </app-modal>
+
+  <!-- Modal de verificación con input -->
+  <app-modal
+    [title]="verifyDeletionModal.title"
+    type="error"
+    [show]="verifyDeletionModal.show"
+    [showConfirmButtons]="true"
+    confirmLabel="ELIMINAR"
+    cancelLabel="Cancelar"
+    [confirmDisabled]="!isConfirmationValid || isProcessing"
+    [closeOnOverlayClick]="false"
+    (confirm)="executeDeletion()"
+    (close)="cancelDeletionFlow()">
+    <p class="warning-text">
+      Para confirmar, escribe <span>ELIMINAR</span> y presiona el botón para borrar tus datos. Esta
+      validación asegura que solo tú puedas completar el proceso.
+    </p>
+    <input
+      type="text"
+      [(ngModel)]="confirmationInput"
+      placeholder="Escribe ELIMINAR para confirmar"
+      autocomplete="off"
+      [readonly]="isProcessing"
+    />
+  </app-modal>
+
+  <!-- Modal de feedback -->
+  <app-modal
+    [title]="feedbackModal.title"
+    [message]="feedbackModal.message"
+    [type]="feedbackModal.type"
+    [show]="feedbackModal.show"
+    (close)="closeFeedbackModal()">
+  </app-modal>
+</div>
+
