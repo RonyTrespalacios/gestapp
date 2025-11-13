@@ -1,18 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TransactionService, Transaction } from '../../services/transaction.service';
 import * as XLSX from 'xlsx';
 import { ModalComponent } from '../modal/modal.component';
+import { FileUploadModalComponent } from '../file-upload-modal/file-upload-modal.component';
 
 @Component({
   selector: 'app-data-table',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalComponent],
+  imports: [CommonModule, FormsModule, ModalComponent, FileUploadModalComponent],
   templateUrl: './data-table.component.html',
   styleUrls: ['./data-table.component.scss']
 })
-export class DataTableComponent implements OnInit {
+export class DataTableComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('container', { static: false }) containerRef?: ElementRef;
+  
   transactions: Transaction[] = [];
   isLoading = false;
   selectedFile: File | null = null;
@@ -23,15 +26,185 @@ export class DataTableComponent implements OnInit {
   modalType: 'success' | 'error' | 'info' = 'info';
   showConfirmModal = false;
   pendingDeleteId: number | null = null;
+  showUploadModal = false;
+  pendingFile: File | null = null;
   private readonly numberFormatter = new Intl.NumberFormat('es-CO', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   });
+  
+  private dragOverCounter = 0;
+  private dragEnterHandler?: (e: DragEvent) => void;
+  private dragOverHandler?: (e: DragEvent) => void;
+  private dragLeaveHandler?: (e: DragEvent) => void;
+  private dropHandler?: (e: DragEvent) => void;
 
   constructor(private transactionService: TransactionService) {}
 
   ngOnInit() {
     this.loadTransactions();
+  }
+
+  ngAfterViewInit() {
+    // Esperar un tick para asegurar que el DOM esté completamente renderizado
+    setTimeout(() => {
+      this.setupDragAndDrop();
+    }, 0);
+  }
+
+  ngOnDestroy() {
+    this.removeDragAndDropListeners();
+  }
+
+  private setupDragAndDrop() {
+    // Usar listeners a nivel de documento para capturar drag desde fuera
+    this.dragEnterHandler = (e: DragEvent) => {
+      // Verificar que sea un archivo y no esté sobre el modal
+      const target = e.target as HTMLElement;
+      if (target?.closest('.modal-overlay') || target?.closest('app-file-upload-modal')) {
+        return; // No hacer nada si está sobre el modal
+      }
+
+      // Verificar que el evento esté dentro del contenedor de datos
+      const container = this.containerRef?.nativeElement || document.querySelector('.data-table-container');
+      if (!container) {
+        return;
+      }
+      
+      // Verificar que el target esté dentro del contenedor o sea el contenedor mismo
+      // Si target es null o body, también permitir (drag desde fuera de la página)
+      const isInsideContainer = !target || target === container || container.contains(target);
+      if (!isInsideContainer) {
+        return; // Solo procesar si está dentro del contenedor o viene desde fuera
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      this.dragOverCounter++;
+      
+      // Solo abrir el modal si no está ya abierto y si hay archivos
+      if (this.dragOverCounter === 1 && !this.showUploadModal) {
+        const types = e.dataTransfer?.types || [];
+        const hasFiles = types.includes('Files') || 
+                        Array.from(types).some(t => t === 'application/x-moz-file' || t.includes('file'));
+        
+        if (hasFiles) {
+          const items = e.dataTransfer?.items;
+          let isFile = false;
+          
+          if (items && items.length > 0) {
+            // Verificar que al menos uno sea un archivo
+            for (let i = 0; i < items.length; i++) {
+              if (items[i].kind === 'file') {
+                isFile = true;
+                break;
+              }
+            }
+          } else if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+            // Fallback: si hay archivos pero no items, considerar como archivo
+            isFile = true;
+          }
+          
+          if (isFile) {
+            this.openUploadModal();
+          }
+        }
+      }
+    };
+
+    this.dragOverHandler = (e: DragEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.closest('.modal-overlay') || target?.closest('app-file-upload-modal')) {
+        return;
+      }
+      
+      const container = this.containerRef?.nativeElement || document.querySelector('.data-table-container');
+      if (!container) {
+        return;
+      }
+      
+      if (target && target !== container && !container.contains(target)) {
+        return;
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    this.dragLeaveHandler = (e: DragEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.closest('.modal-overlay') || target?.closest('app-file-upload-modal')) {
+        return;
+      }
+      
+      const container = this.containerRef?.nativeElement || document.querySelector('.data-table-container');
+      if (!container) {
+        return;
+      }
+      
+      if (target && target !== container && !container.contains(target)) {
+        return;
+      }
+      
+      e.preventDefault();
+      e.stopPropagation();
+      this.dragOverCounter--;
+      if (this.dragOverCounter <= 0) {
+        this.dragOverCounter = 0;
+      }
+    };
+
+    this.dropHandler = (e: DragEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.closest('.modal-overlay') || target?.closest('app-file-upload-modal')) {
+        return; // Dejar que el modal maneje el drop
+      }
+
+      const container = this.containerRef?.nativeElement || document.querySelector('.data-table-container');
+      if (!container) {
+        return;
+      }
+      
+      if (target && target !== container && !container.contains(target)) {
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      this.dragOverCounter = 0;
+      
+      // Si hay archivos y el modal no está abierto, guardar el archivo y abrir el modal
+      if (!this.showUploadModal && e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        const name = (file.name || '').toLowerCase();
+        if (name.endsWith('.csv') || name.endsWith('.xlsx')) {
+          this.pendingFile = file;
+          this.openUploadModal();
+        }
+      }
+    };
+
+    // Agregar listeners a nivel de documento para capturar drag desde fuera
+    document.addEventListener('dragenter', this.dragEnterHandler, false);
+    document.addEventListener('dragover', this.dragOverHandler, false);
+    document.addEventListener('dragleave', this.dragLeaveHandler, false);
+    document.addEventListener('drop', this.dropHandler, false);
+  }
+
+  private removeDragAndDropListeners() {
+    // Remover listeners a nivel de documento
+    if (this.dragEnterHandler) {
+      document.removeEventListener('dragenter', this.dragEnterHandler, false);
+    }
+    if (this.dragOverHandler) {
+      document.removeEventListener('dragover', this.dragOverHandler, false);
+    }
+    if (this.dragLeaveHandler) {
+      document.removeEventListener('dragleave', this.dragLeaveHandler, false);
+    }
+    if (this.dropHandler) {
+      document.removeEventListener('drop', this.dropHandler, false);
+    }
   }
 
   loadTransactions() {
@@ -130,22 +303,25 @@ export class DataTableComponent implements OnInit {
     return new Date().toISOString().split('T')[0];
   }
 
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const name = (file.name || '').toLowerCase();
-    if (name.endsWith('.csv') || name.endsWith('.xlsx')) {
-      this.selectedFile = file;
-    } else {
-      this.showModalMessage('Advertencia', 'Selecciona un archivo .csv o .xlsx', 'error');
-      event.target.value = '';
-    }
+  openUploadModal() {
+    this.showUploadModal = true;
   }
+
+  closeUploadModal() {
+    this.showUploadModal = false;
+    this.pendingFile = null;
+  }
+
+  onFileSelectedFromModal(file: File) {
+    this.selectedFile = file;
+    this.pendingFile = null; // Limpiar el archivo pendiente
+    this.showUploadModal = false; // Cerrar el modal
+    this.uploadCSV(); // Iniciar la carga automáticamente
+  }
+
 
   uploadCSV() {
     if (!this.selectedFile) {
-      this.showModalMessage('Advertencia', 'Selecciona un archivo CSV primero', 'info');
       return;
     }
 
@@ -159,8 +335,10 @@ export class DataTableComponent implements OnInit {
         next: () => {
           this.showModalMessage('Éxito', 'Archivo importado exitosamente', 'success');
           this.selectedFile = null;
+          this.pendingFile = null;
           this.loadTransactions();
           this.isLoading = false;
+          this.showUploadModal = false;
         },
         error: (error) => {
           console.error('Error uploading CSV:', error);
@@ -174,6 +352,7 @@ export class DataTableComponent implements OnInit {
           }
           this.showModalMessage('Error', message, 'error');
           this.isLoading = false;
+          // No cerrar el modal en caso de error para que el usuario pueda intentar de nuevo
         }
       });
     };
@@ -185,14 +364,35 @@ export class DataTableComponent implements OnInit {
         try {
           const data = new Uint8Array(reader.result as ArrayBuffer);
           const wb = XLSX.read(data, { type: 'array' });
+          
+          if (!wb.SheetNames || wb.SheetNames.length === 0) {
+            this.showModalMessage('Error', 'El archivo XLSX no contiene hojas de cálculo', 'error');
+            return;
+          }
+          
           const firstSheet = wb.SheetNames[0];
           const ws = wb.Sheets[firstSheet];
+          
+          if (!ws) {
+            this.showModalMessage('Error', 'No se pudo leer la hoja de cálculo del archivo XLSX', 'error');
+            return;
+          }
+          
           const csv = XLSX.utils.sheet_to_csv(ws);
+          
+          if (!csv || csv.trim().length === 0) {
+            this.showModalMessage('Error', 'El archivo XLSX está vacío', 'error');
+            return;
+          }
+          
           processAndUpload(new Blob([csv], { type: 'text/csv' }));
         } catch (e) {
           console.error('Error convirtiendo XLSX a CSV:', e);
-          this.showModalMessage('Error', 'No se pudo convertir el XLSX a CSV', 'error');
+          this.showModalMessage('Error', 'No se pudo convertir el archivo XLSX. Verifica que el archivo no esté corrupto.', 'error');
         }
+      };
+      reader.onerror = () => {
+        this.showModalMessage('Error', 'Error al leer el archivo XLSX', 'error');
       };
       reader.readAsArrayBuffer(this.selectedFile);
     } else {

@@ -33,17 +33,35 @@ export class TransactionsService {
     this.ensureValidCategoria(createTransactionDto.categoria);
     this.ensureValidMedio(createTransactionDto.medio);
 
+    // Crear transacción sin ID (la base de datos lo asignará automáticamente)
     const transaction = this.transactionRepository.create({
-      ...createTransactionDto,
+      categoria: createTransactionDto.categoria,
+      descripcion: createTransactionDto.descripcion,
+      tipo: createTransactionDto.tipo,
       monto,
-      userId,
+      medio: createTransactionDto.medio,
       fecha: new Date(createTransactionDto.fecha),
+      observaciones: createTransactionDto.observaciones,
+      userId,
     });
     
     // Calcular el valor basado en el tipo
     transaction.valor = this.calculateValor(createTransactionDto.tipo, monto);
 
-    return await this.transactionRepository.save(transaction);
+    try {
+      return await this.transactionRepository.save(transaction);
+    } catch (error: any) {
+      // Si hay un error de duplicate key, la secuencia está desincronizada
+      // Sincronizamos automáticamente y reintentamos UNA VEZ
+      if (error?.code === '23505' || error?.message?.includes('duplicate key')) {
+        this.logger.warn('Secuencia de IDs desincronizada detectada. Sincronizando automáticamente...');
+        await this.syncSequence();
+        // Reintentar después de sincronizar (solo una vez)
+        return await this.transactionRepository.save(transaction);
+      }
+      // Si es otro tipo de error, lo lanzamos normalmente
+      throw error;
+    }
   }
 
   async findAll(userId: number): Promise<Transaction[]> {
@@ -105,17 +123,11 @@ export class TransactionsService {
   async remove(id: number, userId: number): Promise<void> {
     const transaction = await this.findOne(id, userId);
     await this.transactionRepository.remove(transaction);
-
-    await this.resetSequenceIfNoTransactions(userId);
   }
 
   async removeAllForUser(userId: number): Promise<{ deleted: number }> {
     const result = await this.transactionRepository.delete({ userId });
     const deleted = result.affected ?? 0;
-
-    if (deleted >= 0) {
-      await this.resetSequenceIfNoTransactions(userId);
-    }
 
     return { deleted };
   }
@@ -123,20 +135,19 @@ export class TransactionsService {
   async exportToCsv(userId: number): Promise<string> {
     const transactions = await this.findAll(userId);
     
-    // CSV Header
-    let csv = 'id,categoria,descripcion,tipo,monto,medio,fecha,observaciones,valor\n';
+    // CSV Header (sin ID)
+    let csv = 'categoria,descripcion,tipo,monto,medio,fecha,observaciones,valor\n';
     
-    // CSV Rows
+    // CSV Rows (sin ID)
     transactions.forEach(t => {
       const row = [
-        t.id,
         t.categoria,
         `"${t.descripcion.replace(/"/g, '""')}"`,
         t.tipo,
         t.monto,
         t.medio,
         t.fecha,
-        t.observaciones ? `"${t.observaciones.replace(/"/g, '""')}"` : '',
+        t.observaciones ? `"${t.observaciones.replace(/""/g, '"')}"` : '',
         t.valor,
       ];
       csv += row.join(',') + '\n';
@@ -157,6 +168,26 @@ export class TransactionsService {
       throw new Error('El archivo CSV está vacío');
     }
 
+    // Parse header to detect column positions
+    const headerColumns = this.parseCSVLine(lines[0]).map(col => col.toLowerCase().trim());
+    
+    // Find column indices (ignore ID if present)
+    const idIndex = headerColumns.indexOf('id');
+    const categoriaIndex = headerColumns.indexOf('categoria');
+    const descripcionIndex = headerColumns.indexOf('descripcion');
+    const tipoIndex = headerColumns.indexOf('tipo');
+    const montoIndex = headerColumns.indexOf('monto');
+    const medioIndex = headerColumns.indexOf('medio');
+    const fechaIndex = headerColumns.indexOf('fecha');
+    const observacionesIndex = headerColumns.indexOf('observaciones');
+    const valorIndex = headerColumns.indexOf('valor');
+
+    // Validate required columns
+    if (categoriaIndex === -1 || descripcionIndex === -1 || tipoIndex === -1 || 
+        montoIndex === -1 || medioIndex === -1 || fechaIndex === -1) {
+      throw new BadRequestException('El archivo CSV debe contener las columnas: categoria, descripcion, tipo, monto, medio, fecha');
+    }
+
     // Skip header
     const dataLines = lines.slice(1);
     const transactionsToSave: Transaction[] = [];
@@ -171,12 +202,20 @@ export class TransactionsService {
 
       const values = this.parseCSVLine(line);
 
-      if (values.length < 8) {
-        errors.push(`Fila ${rowNumber}: Formato incompleto.`);
+      // Get values by column index (skip ID if present)
+      const categoria = values[categoriaIndex]?.trim();
+      const descripcion = values[descripcionIndex]?.trim();
+      const tipo = values[tipoIndex]?.trim();
+      const montoStr = values[montoIndex]?.trim();
+      const medio = values[medioIndex]?.trim();
+      const fechaStr = values[fechaIndex]?.trim();
+      const observaciones = observacionesIndex !== -1 ? values[observacionesIndex]?.trim() : '';
+
+      // Validate required fields
+      if (!categoria || !descripcion || !tipo || !montoStr || !medio || !fechaStr) {
+        errors.push(`Fila ${rowNumber}: Faltan campos requeridos.`);
         return;
       }
-
-      const [, categoria, descripcion, tipo, montoStr, medio, fechaStr, observaciones] = values;
 
       try {
         this.ensureValidCategoria(categoria);
@@ -184,10 +223,24 @@ export class TransactionsService {
         this.ensureValidMedio(medio);
 
         const monto = this.ensureValidMonto(montoStr);
-        const fecha = new Date(fechaStr);
+        
+        // Try to parse date in different formats
+        let fecha: Date;
+        if (fechaStr.includes('/')) {
+          // Format: DD/MM/YYYY or MM/DD/YYYY
+          const parts = fechaStr.split('/');
+          if (parts.length === 3) {
+            // Assume DD/MM/YYYY format
+            fecha = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+          } else {
+            fecha = new Date(fechaStr);
+          }
+        } else {
+          fecha = new Date(fechaStr);
+        }
 
         if (Number.isNaN(fecha.getTime())) {
-          throw new BadRequestException('La fecha no tiene un formato válido (YYYY-MM-DD).');
+          throw new BadRequestException('La fecha no tiene un formato válido. Use YYYY-MM-DD o DD/MM/YYYY.');
         }
 
         const transaction = this.transactionRepository.create({
@@ -221,8 +274,22 @@ export class TransactionsService {
       throw new BadRequestException('El archivo CSV no contiene transacciones válidas.');
     }
 
-    await this.transactionRepository.save(transactionsToSave);
-    return { imported: transactionsToSave.length };
+    try {
+      await this.transactionRepository.save(transactionsToSave);
+      return { imported: transactionsToSave.length };
+    } catch (error: any) {
+      // Si hay un error de duplicate key durante la importación masiva,
+      // sincronizamos la secuencia y reintentamos
+      if (error?.code === '23505' || error?.message?.includes('duplicate key')) {
+        this.logger.warn('Secuencia desincronizada durante importación. Sincronizando...');
+        await this.syncSequence();
+        // Reintentar después de sincronizar
+        await this.transactionRepository.save(transactionsToSave);
+        return { imported: transactionsToSave.length };
+      }
+      // Si es otro tipo de error, lo lanzamos normalmente
+      throw error;
+    }
   }
 
   private parseCSVLine(line: string): string[] {
@@ -305,22 +372,36 @@ export class TransactionsService {
     }
   }
 
-  private async resetSequenceIfNoTransactions(userId: number): Promise<void> {
-    const userTotal = await this.transactionRepository.count({ where: { userId } });
-    
-    // Solo reiniciar la secuencia si el usuario no tiene transacciones
-    // Y si la tabla está completamente vacía (sin transacciones de ningún usuario)
-    if (userTotal === 0) {
-      const globalTotal = await this.transactionRepository.count();
+
+  /**
+   * Sincroniza la secuencia de IDs de PostgreSQL con el valor máximo actual en la tabla.
+   * Esto corrige problemas de secuencia desincronizada sin perder datos.
+   * 
+   * La secuencia se puede desincronizar por:
+   * - Inserciones directas en la base de datos con IDs explícitos
+   * - Importaciones masivas que no respetaron la secuencia
+   * - Operaciones manuales en la base de datos
+   * 
+   * Esta función es segura porque:
+   * - Solo actualiza la secuencia al siguiente valor disponible
+   * - No modifica datos existentes
+   * - Funciona correctamente con múltiples usuarios
+   */
+  private async syncSequence(): Promise<void> {
+    try {
+      // Sincronizar la secuencia al siguiente valor disponible después del máximo ID actual
+      // Esto corrige la desincronización sin afectar datos existentes
+      // GREATEST asegura que si la secuencia ya es mayor, se mantenga; si es menor, se actualiza
+      const result = await this.transactionRepository.query(
+        `SELECT setval('transactions_id_seq', GREATEST((SELECT COALESCE(MAX(id), 0) FROM transactions) + 1, (SELECT last_value FROM transactions_id_seq)), false) as next_val`
+      );
       
-      // Solo reiniciar si la tabla está completamente vacía
-      if (globalTotal === 0) {
-        try {
-          await this.transactionRepository.query('ALTER SEQUENCE IF EXISTS "transactions_id_seq" RESTART WITH 1');
-        } catch (error) {
-          this.logger.warn(`No se pudo reiniciar la secuencia de transacciones: ${this.extractErrorMessage(error)}`);
-        }
-      }
+      const nextVal = result[0]?.next_val || 'N/A';
+      this.logger.log(`Secuencia sincronizada. Próximo ID será: ${nextVal}`);
+    } catch (error) {
+      this.logger.error(`Error al sincronizar la secuencia: ${this.extractErrorMessage(error)}`);
+      // No lanzamos el error para no interrumpir el flujo, pero lo registramos
+      // Si la sincronización falla, el siguiente intento detectará el error nuevamente
     }
   }
 
