@@ -221,5 +221,22 @@ export class AiChatWidgetComponent implements OnInit, OnDestroy {
     }];
     this.message = '';
   }
+
+  /**
+   * Método público para abrir el widget y establecer un mensaje predefinido
+   * Útil para iniciar conversaciones desde otros componentes
+   */
+  openWithMessage(message: string) {
+    this.message = message;
+    this.isMinimized = false;
+    this.isOpen = true;
+    // Enfocar el textarea después de un breve delay para asegurar que esté renderizado
+    setTimeout(() => {
+      if (this.messageInputRef?.nativeElement) {
+        this.messageInputRef.nativeElement.focus();
+        this.autoResizeTextarea();
+      }
+    }, 100);
+  }
 }
 
