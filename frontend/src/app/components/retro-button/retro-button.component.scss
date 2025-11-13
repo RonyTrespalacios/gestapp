@@ -46,13 +46,14 @@
   }
 
   &.variant-danger {
-    background: #f44336;
+    background: #000;
     border-color: #f44336;
     color: #fff;
 
     &:hover:not(:disabled) {
       background: #fff;
-      color: #f44336;
+      color: #000;
+      border-color: #000;
     }
   }
 

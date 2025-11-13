@@ -13,6 +13,7 @@ export interface Transaction {
   fecha: string;
   observaciones?: string;
   valor?: number;
+  createdAt?: string;
 }
 
 @Injectable({

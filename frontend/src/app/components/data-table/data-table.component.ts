@@ -17,6 +17,10 @@ export class DataTableComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('container', { static: false }) containerRef?: ElementRef;
   
   transactions: Transaction[] = [];
+  allTransactions: Transaction[] = []; // Todas las transacciones cargadas
+  displayedTransactions: Transaction[] = []; // Transacciones mostradas según el límite
+  displayLimit: number = 10; // Límite por defecto
+  private readonly DISPLAY_LIMIT_KEY = 'gestapp_display_limit'; // Clave para localStorage
   isLoading = false;
   selectedFile: File | null = null;
   exportFormat: 'csv' | 'xlsx' = 'csv';
@@ -42,7 +46,23 @@ export class DataTableComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(private transactionService: TransactionService) {}
 
   ngOnInit() {
+    // Cargar la configuración guardada del usuario
+    this.loadDisplayLimitFromStorage();
     this.loadTransactions();
+  }
+
+  private loadDisplayLimitFromStorage() {
+    const saved = localStorage.getItem(this.DISPLAY_LIMIT_KEY);
+    if (saved) {
+      const limit = parseInt(saved, 10);
+      if (!isNaN(limit) && (limit === -1 || limit > 0)) {
+        this.displayLimit = limit;
+      }
+    }
+  }
+
+  private saveDisplayLimitToStorage() {
+    localStorage.setItem(this.DISPLAY_LIMIT_KEY, this.displayLimit.toString());
   }
 
   ngAfterViewInit() {
@@ -211,7 +231,10 @@ export class DataTableComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isLoading = true;
     this.transactionService.getAll().subscribe({
       next: (data) => {
-        this.transactions = data;
+        // Guardar todas las transacciones
+        this.allTransactions = data;
+        // Aplicar el límite de visualización
+        this.applyDisplayLimit();
         this.isLoading = false;
       },
       error: (error) => {
@@ -219,6 +242,64 @@ export class DataTableComponent implements OnInit, AfterViewInit, OnDestroy {
         this.isLoading = false;
       }
     });
+  }
+
+  applyDisplayLimit() {
+    // Ordenar por fecha DESC y luego por createdAt DESC o ID DESC para asegurar orden correcto
+    const sorted = [...this.allTransactions].sort((a, b) => {
+      const dateA = new Date(a.fecha).getTime();
+      const dateB = new Date(b.fecha).getTime();
+      
+      // Si las fechas son diferentes, ordenar por fecha
+      if (dateA !== dateB) {
+        return dateB - dateA; // Más reciente primero
+      }
+      
+      // Si las fechas son iguales, ordenar por createdAt (más reciente primero)
+      if (a.createdAt && b.createdAt) {
+        const createdA = new Date(a.createdAt).getTime();
+        const createdB = new Date(b.createdAt).getTime();
+        if (createdA !== createdB) {
+          return createdB - createdA;
+        }
+      }
+      
+      // Si no hay createdAt o son iguales, usar ID como respaldo (mayor ID = más reciente)
+      if (a.id && b.id) {
+        return (b.id || 0) - (a.id || 0);
+      }
+      
+      // Si no hay ID, mantener el orden original
+      return 0;
+    });
+
+    // Aplicar el límite (si es -1, mostrar todas)
+    if (this.displayLimit === -1 || this.displayLimit < 0) {
+      // Mostrar todas las transacciones
+      this.displayedTransactions = sorted;
+      this.transactions = sorted;
+    } else {
+      // Mostrar solo las primeras X transacciones
+      this.displayedTransactions = sorted.slice(0, this.displayLimit);
+      this.transactions = this.displayedTransactions;
+    }
+  }
+
+  get hasMoreTransactions(): boolean {
+    return this.displayLimit !== -1 && this.allTransactions.length > this.displayLimit;
+  }
+
+  get remainingCount(): number {
+    return this.allTransactions.length - this.displayLimit;
+  }
+
+  onDisplayLimitChange() {
+    // Asegurar que el valor sea numérico
+    if (typeof this.displayLimit === 'string') {
+      this.displayLimit = parseInt(this.displayLimit, 10);
+    }
+    this.applyDisplayLimit();
+    this.saveDisplayLimitToStorage();
   }
 
   deleteTransaction(id: number) {
@@ -232,6 +313,7 @@ export class DataTableComponent implements OnInit, AfterViewInit, OnDestroy {
     this.transactionService.delete(this.pendingDeleteId).subscribe({
       next: () => {
         this.showModalMessage('Éxito', 'Transacción eliminada exitosamente', 'success');
+        // Recargar todas las transacciones y aplicar el límite
         this.loadTransactions();
         this.pendingDeleteId = null;
       },

@@ -39,6 +39,51 @@
     gap: 10px;
     align-items: center;
   }
+
+  .display-limit-section {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 15px;
+
+    .limit-label {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 11px;
+      color: #000;
+      white-space: nowrap;
+    }
+
+    .format-select {
+      height: 48px;
+      padding: 10px 12px;
+      border: 2px solid #000;
+      background: #fff;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 12px;
+      cursor: pointer;
+      min-width: 150px;
+    }
+
+    .more-indicator {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 10px;
+      color: #666;
+      white-space: nowrap;
+    }
+  }
+
+  .records-info {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+    margin-bottom: 15px;
+
+    .records-text {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 10px;
+      color: #000;
+    }
+  }
 }
 
 .btn {

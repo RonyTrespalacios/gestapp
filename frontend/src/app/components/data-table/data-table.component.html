@@ -3,7 +3,7 @@
   <app-modal 
     [title]="'Confirmar'"
     [message]="'¿Estás seguro de que deseas eliminar esta transacción?'"
-    [type]="'info'"
+    [type]="'error'"
     [show]="showConfirmModal"
     [showConfirmButtons]="true"
     (confirm)="confirmDelete()"
@@ -59,6 +59,29 @@
         </button>
       </div>
     </div>
+
+    <div class="display-limit-section">
+      <label for="displayLimit" class="limit-label">Mostrar:</label>
+      <select 
+        id="displayLimit"
+        [(ngModel)]="displayLimit" 
+        (ngModelChange)="onDisplayLimitChange()"
+        class="format-select">
+        <option [ngValue]="5">Últimas 5</option>
+        <option [ngValue]="10">Últimas 10</option>
+        <option [ngValue]="15">Últimas 15</option>
+        <option [ngValue]="20">Últimas 20</option>
+        <option [ngValue]="45">Últimas 45</option>
+        <option [ngValue]="50">Últimas 50</option>
+        <option [ngValue]="-1">Todas</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="records-info" *ngIf="!isLoading && allTransactions.length > 0">
+    <span class="records-text">
+      {{ displayedTransactions.length }} registros mostrados de {{ allTransactions.length }} registros totales
+    </span>
   </div>
 
   <div class="table-wrapper" *ngIf="!isLoading && transactions.length > 0">
